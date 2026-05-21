@@ -1,0 +1,225 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+
+:root {
+  --bg-dark: #0a0f1a;
+  --bg-card: rgba(16, 24, 39, 0.7);
+  --bg-card-hover: rgba(22, 33, 53, 0.9);
+  --accent-cyan: #00f3ff;
+  --accent-blue: #3a86ff;
+  --accent-violet: #8338ec;
+  --text-main: #f8f9fa;
+  --text-muted: #adb5bd;
+  --border-color: rgba(255, 255, 255, 0.1);
+  --glow-cyan: 0 0 15px rgba(0, 243, 255, 0.4);
+  --glow-violet: 0 0 15px rgba(131, 56, 236, 0.4);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Outfit', sans-serif;
+}
+
+body {
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  background-image: 
+    radial-gradient(circle at 15% 50%, rgba(58, 134, 255, 0.15), transparent 25%),
+    radial-gradient(circle at 85% 30%, rgba(131, 56, 236, 0.15), transparent 25%);
+  background-attachment: fixed;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* Glassmorphism utilities */
+.glass-panel {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-dark); 
+}
+::-webkit-scrollbar-thumb {
+  background: var(--accent-blue); 
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-cyan); 
+}
+
+/* Utilities */
+.text-gradient {
+  background: linear-gradient(90deg, var(--accent-cyan), var(--accent-violet));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-violet));
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-primary:hover {
+  box-shadow: var(--glow-violet);
+  transform: translateY(-2px);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--accent-cyan);
+  border: 1px solid var(--accent-cyan);
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-outline:hover {
+  box-shadow: var(--glow-cyan);
+  background: rgba(0, 243, 255, 0.1);
+}
+
+input, select, textarea {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  padding: 12px 16px;
+  border-radius: 8px;
+  width: 100%;
+  transition: all 0.3s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 8px rgba(0, 243, 255, 0.2);
+}
+
+/* Calendar specific */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  margin-top: 32px;
+}
+
+.month-card {
+  padding: 16px;
+}
+
+.month-title {
+  text-align: center;
+  margin-bottom: 16px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--accent-cyan);
+}
+
+.days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.day-header {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.day-cell {
+  aspect-ratio: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.day-cell:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.day-cell.has-event {
+  border: 2px solid var(--accent-violet);
+}
+
+.day-cell.has-event:hover {
+  box-shadow: var(--glow-violet);
+  transform: scale(1.08);
+  z-index: 10;
+}
+
+.event-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  border: 1px solid var(--accent-cyan);
+}
+
+/* React Flow customizations */
+.react-flow__node {
+  border-radius: 12px;
+}
+.react-flow__handle {
+  width: 8px;
+  height: 8px;
+  background: var(--accent-cyan);
+}
+.react-flow__edge-path {
+  stroke: var(--accent-blue);
+  stroke-width: 2;
+}
+
+/* Modal / Drawer Overlay */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  width: 90%;
+  max-width: 500px;
+  padding: 32px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
