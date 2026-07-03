@@ -64,7 +64,8 @@ export const subscribeToEvents = (familyId, cb) =>
 
 export const addEvent = async (familyId, eventData, uid, username) => {
   const ref = await addDoc(collection(db, 'families', familyId, 'events'), {
-    ...eventData, createdBy: uid, createdByUsername: username, createdAt: serverTimestamp(),
+    ...eventData, photo: eventData.photo ?? null,
+    createdBy: uid ?? null, createdByUsername: username ?? null, createdAt: serverTimestamp(),
   });
   await writeLog(familyId, uid, username, 'added_event',
     `Added ${eventData.type} for ${eventData.name} on ${eventData.date}`);
@@ -85,8 +86,8 @@ export const subscribeToTree = (familyId, cb) =>
 export const saveTree = async (familyId, personNodes, uid, username) => {
   await setDoc(doc(db, 'families', familyId, 'tree', 'main'), {
     personNodes,
-    updatedBy: uid,
-    updatedByUsername: username,
+    updatedBy: uid ?? null,
+    updatedByUsername: username ?? null,
     updatedAt: serverTimestamp(),
   });
   await writeLog(familyId, uid, username, 'updated_tree', 'Updated the family tree');
@@ -104,8 +105,9 @@ export const toggleFamilyLock = async (familyId, locked, uid, username) => {
 // ─── Access Log ──────────────────────────────────────────────────────────────
 const writeLog = (familyId, userId, username, action, details) =>
   addDoc(collection(db, 'families', familyId, 'accessLog'), {
-    userId, username, action, details, timestamp: serverTimestamp(),
-  });
+    userId: userId ?? null, username: username ?? 'unknown',
+    action, details, timestamp: serverTimestamp(),
+  }).catch(err => console.warn('Access log write failed:', err));
 
 export const subscribeToAccessLog = (familyId, cb) => {
   const q = query(

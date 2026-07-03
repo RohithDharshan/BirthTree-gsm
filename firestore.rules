@@ -1,0 +1,32 @@
+rules_version = '2';
+
+// Paste into Firebase Console → Firestore Database → Rules → Publish.
+// Registration needs: read on /usernames before sign-in is NOT required
+// (the app degrades gracefully), but signed-in users must be able to
+// write their own profile and username mapping.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Username → uid mapping (read needed for uniqueness check; create by owner)
+    match /usernames/{name} {
+      allow read: if true;
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+    }
+
+    // User profiles: each user manages their own document
+    match /users/{uid} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Family data: any signed-in user can read/write (members share a familyId).
+    // Covers the family doc plus all subcollections (events, tree, accessLog).
+    match /families/{familyId} {
+      allow read, write: if request.auth != null;
+
+      match /{document=**} {
+        allow read, write: if request.auth != null;
+      }
+    }
+  }
+}

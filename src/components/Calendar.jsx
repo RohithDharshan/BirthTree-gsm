@@ -246,16 +246,16 @@ export default function CalendarView() {
         </div>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+      <div className="calendar-header">
         <div>
           <h1 className="text-gradient" style={{ fontSize: '2.5rem', marginBottom: '8px' }}>Special Occasions</h1>
           <p style={{ color: 'var(--text-muted)' }}>Track birthdays and anniversaries of your loved ones</p>
         </div>
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+        <div className="controls-group">
           <select
             value={selectedMonth}
             onChange={e => setSelectedMonth(e.target.value)}
-            style={{ width: '160px', padding: '10px 16px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-color)', color: 'white', borderRadius: '8px' }}
+            style={{ width: '160px' }}
           >
             <option value="all">All Months</option>
             {MONTHS.map((m, i) => <option key={i} value={i}>{m}</option>)}
@@ -278,20 +278,27 @@ export default function CalendarView() {
           const year = new Date().getFullYear();
           const daysCount = getDaysInMonth(new Date(year, monthIndex));
           const days = Array.from({ length: daysCount }, (_, i) => i + 1);
+          const firstWeekday = new Date(year, monthIndex, 1).getDay();
+          const today = new Date();
 
           return (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
               transition={{ delay: monthIndex * 0.05 }}
-              key={month} 
+              key={month}
               className="glass-panel month-card"
             >
               <h3 className="month-title">{month}</h3>
               <div className="days-grid">
+                {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
+                  <div key={d} className="day-header">{d}</div>
+                ))}
+                {Array.from({ length: firstWeekday }, (_, i) => (
+                  <div key={`pad-${i}`} className="day-cell empty" />
+                ))}
                 {days.map(day => {
-                  const dateStr = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                   const dayEvents = events.filter(e => {
                     if (!e.date) return false;
                     const eDate = new Date(e.date);
@@ -300,11 +307,12 @@ export default function CalendarView() {
                   });
 
                   const hasEvent = dayEvents.length > 0;
+                  const isToday = today.getMonth() === monthIndex && today.getDate() === day;
 
                   return (
                     <div
                       key={day}
-                      className={`day-cell ${hasEvent ? 'has-event' : ''}`}
+                      className={`day-cell ${hasEvent ? 'has-event' : ''} ${isToday ? 'is-today' : ''}`}
                       onClick={() => hasEvent && setSelectedDayEvents({ day, month, dayEvents })}
                       style={hasEvent ? {
                         display: 'flex', flexDirection: 'column',
@@ -335,51 +343,57 @@ export default function CalendarView() {
       </div>
 
       {/* Event List Section */}
-      <div style={{ marginTop: '48px', padding: '24px', background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
-        <h2 className="text-gradient" style={{ fontSize: '1.8rem', marginBottom: '24px' }}>
-          {selectedMonth === 'all' ? 'All Upcoming Events' : `${MONTHS[selectedMonth]} Events`}
-        </h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '16px' }}>
-          {events
-            .filter(e => {
-              if (selectedMonth === 'all') return true;
-              if (!e.date) return false;
-              return new Date(e.date).getMonth() === Number(selectedMonth);
-            })
-            .sort((a, b) => {
-              const dateA = new Date(a.date);
-              const dateB = new Date(b.date);
-              if (dateA.getMonth() !== dateB.getMonth()) return dateA.getMonth() - dateB.getMonth();
-              return dateA.getDate() - dateB.getDate();
-            })
-            .map(evt => (
-              <div 
-                key={evt.id} 
-                onClick={() => setSelectedEvent(evt)}
-                style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', cursor: 'pointer', transition: 'background 0.2s ease' }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-              >
-                {evt.photo ? (
-                  <img src={evt.photo} alt={evt.name} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: `2px solid ${evt.type === 'birthday' ? '#ef4444' : '#000000'}` }} />
-                ) : (
-                  <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'var(--bg-dark)', border: `2px solid ${evt.type === 'birthday' ? '#ef4444' : '#000000'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
-                    {evt.name.charAt(0)}
+      {(() => {
+        const filtered = events
+          .filter(e => {
+            if (selectedMonth === 'all') return true;
+            if (!e.date) return false;
+            return new Date(e.date).getMonth() === Number(selectedMonth);
+          })
+          .sort((a, b) => {
+            const dateA = new Date(a.date);
+            const dateB = new Date(b.date);
+            if (dateA.getMonth() !== dateB.getMonth()) return dateA.getMonth() - dateB.getMonth();
+            return dateA.getDate() - dateB.getDate();
+          });
+
+        return (
+          <div className="glass-panel" style={{ marginTop: '48px', padding: '28px' }}>
+            <div className="section-heading">
+              <h2 className="text-gradient">
+                {selectedMonth === 'all' ? 'All Events' : `${MONTHS[selectedMonth]} Events`}
+              </h2>
+              <span className="badge-count">{filtered.length}</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '16px' }}>
+              {filtered.map(evt => (
+                <div key={evt.id} className="event-card" onClick={() => setSelectedEvent(evt)}>
+                  {evt.photo ? (
+                    <img src={evt.photo} alt={evt.name} style={{ width: '52px', height: '52px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: `2px solid ${evt.type === 'birthday' ? '#ef4444' : '#6b7280'}` }} />
+                  ) : (
+                    <div style={{ width: '52px', height: '52px', borderRadius: '50%', flexShrink: 0, background: evt.type === 'birthday' ? 'rgba(239,68,68,0.2)' : 'rgba(107,114,128,0.2)', border: `2px solid ${evt.type === 'birthday' ? '#ef4444' : '#6b7280'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', fontWeight: 700 }}>
+                      {evt.name.charAt(0)}
+                    </div>
+                  )}
+                  <div style={{ minWidth: 0 }}>
+                    <h4 style={{ margin: 0, fontSize: '1.05rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{evt.name}</h4>
+                    <p style={{ margin: '2px 0 0', fontSize: '0.82rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {evt.type === 'birthday' ? '🎂' : '💍'}
+                      {new Date(evt.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      <span style={{ textTransform: 'capitalize' }}>• {evt.type}</span>
+                    </p>
                   </div>
-                )}
-                <div>
-                  <h4 style={{ margin: 0, fontSize: '1.1rem' }}>{evt.name}</h4>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                    {new Date(evt.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} • {evt.type}
-                  </p>
                 </div>
-              </div>
-          ))}
-          {events.filter(e => selectedMonth === 'all' || (e.date && new Date(e.date).getMonth() === Number(selectedMonth))).length === 0 && (
-            <p style={{ color: 'var(--text-muted)' }}>No events found.</p>
-          )}
-        </div>
-      </div>
+              ))}
+              {filtered.length === 0 && (
+                <p style={{ color: 'var(--text-muted)', gridColumn: '1 / -1', textAlign: 'center', padding: '24px 0' }}>
+                  No events yet — click “Add Date” to create your first one.
+                </p>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       <AnimatePresence>
         {isAddModalOpen && (
@@ -490,6 +504,7 @@ function DayEventsModal({ day, month, dayEvents, onClose, onSelectEvent }) {
 function AddDateModal({ familyId, uid, username, onClose, onAdded }) {
   const [formData, setFormData] = useState({ name: '', type: 'birthday', date: '', photo: null });
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
   const handlePhotoUpload = (e) => {
     const file = e.target.files[0];
@@ -502,10 +517,14 @@ function AddDateModal({ familyId, uid, username, onClose, onAdded }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
+    setError('');
     try {
       const photo = formData.photo ? await compressImage(formData.photo) : null;
       await addEvent(familyId, { ...formData, photo }, uid, username);
       onAdded();
+    } catch (err) {
+      console.error('Failed to save event:', err);
+      setError(err.message || 'Failed to save. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -546,6 +565,11 @@ function AddDateModal({ familyId, uid, username, onClose, onAdded }) {
             <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)' }}>Photo</label>
             <input type="file" accept="image/*" onChange={handlePhotoUpload} />
           </div>
+          {error && (
+            <div style={{ color: '#ff4d4d', fontSize: '0.85rem', padding: '10px 14px', background: 'rgba(255,77,77,0.1)', borderRadius: '8px', border: '1px solid rgba(255,77,77,0.3)' }}>
+              {error}
+            </div>
+          )}
           <button type="submit" className="btn-primary" disabled={saving} style={{ marginTop: '16px', justifyContent: 'center', opacity: saving ? 0.7 : 1 }}>
             {saving ? 'Saving…' : 'Save Event'}
           </button>

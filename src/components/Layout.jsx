@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { Calendar, Network, LogOut, Users, Activity, Copy, Check, X, Lock, Unlock, MessageCircle } from 'lucide-react';
+import { Calendar, Network, LogOut, Users, Activity, Copy, Check, X, Lock, Unlock, MessageCircle, Send, Smartphone, Bell } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
-import { logoutUser, updateUserCallMeBot } from '../firebase/auth';
+import { logoutUser, updateUserNotificationSettings } from '../firebase/auth';
 import { toggleFamilyLock } from '../firebase/db';
+import { testTelegramNotification, testNtfyNotification, testWhatsAppNotification, testEmailNotification } from '../utils/reminders';
+import { Mail } from 'lucide-react';
 import AccessLog from './AccessLog';
 import BackupRestore from './BackupRestore';
 
@@ -25,13 +27,39 @@ const iconBtn = {
 };
 
 export default function Layout() {
-  const { currentUser, userProfile, isAdmin, isLocked } = useAuth();
+  const { currentUser, userProfile, isAdmin, isLocked, refreshProfile } = useAuth();
   const [showInfo,    setShowInfo]    = useState(false);
   const [showLog,     setShowLog]     = useState(false);
   const [copied,      setCopied]      = useState(false);
-  const [phone,       setPhone]       = useState(userProfile?.phone || '');
-  const [waKey,       setWaKey]       = useState(userProfile?.callmebotKey || '');
-  const [waSaved,     setWaSaved]     = useState(false);
+
+  // Active settings tab ('telegram', 'ntfy')
+  const [activeTab,    setActiveTab]    = useState('telegram');
+
+  // Input states
+  const [tgToken,      setTgToken]      = useState(userProfile?.telegramBotToken || '');
+  const [tgChatId,     setTgChatId]     = useState(userProfile?.telegramChatId || '');
+  const [ntfyTopic,    setNtfyTopic]    = useState(userProfile?.ntfyTopic || '');
+  const [waPhone,      setWaPhone]      = useState(userProfile?.phone || '');
+  const [waKey,        setWaKey]        = useState(userProfile?.callmebotKey || '');
+  const [notifyEmail,  setNotifyEmail]  = useState(userProfile?.notifyEmail || '');
+
+  // Status indicators for testing / saving
+  const [tgStatus,     setTgStatus]     = useState('');
+  const [ntfyStatus,   setNtfyStatus]   = useState('');
+  const [waStatus,     setWaStatus]     = useState('');
+  const [emailStatus,  setEmailStatus]  = useState('');
+
+  // Keep state inputs synced if database changes
+  useEffect(() => {
+    if (userProfile) {
+      setTgToken(userProfile.telegramBotToken || '');
+      setTgChatId(userProfile.telegramChatId || '');
+      setNtfyTopic(userProfile.ntfyTopic || '');
+      setWaPhone(userProfile.phone || '');
+      setWaKey(userProfile.callmebotKey || '');
+      setNotifyEmail(userProfile.notifyEmail || '');
+    }
+  }, [userProfile]);
 
   const copyFamilyId = () => {
     navigator.clipboard.writeText(userProfile?.familyId || '');
@@ -46,21 +74,124 @@ export default function Layout() {
     await toggleFamilyLock(userProfile.familyId, !isLocked, currentUser.uid, userProfile.username);
   };
 
-  const handleWaSave = async () => {
-    await updateUserCallMeBot(currentUser.uid, phone.trim(), waKey.trim());
-    setWaSaved(true);
-    setTimeout(() => setWaSaved(false), 2000);
+  const handleTgSaveAndTest = async () => {
+    if (!tgToken.trim() || !tgChatId.trim()) {
+      alert('Please enter both your Telegram Bot Token and Chat ID.');
+      return;
+    }
+    setTgStatus('testing');
+    try {
+      await updateUserNotificationSettings(currentUser.uid, {
+        telegramBotToken: tgToken.trim(),
+        telegramChatId: tgChatId.trim()
+      });
+      await refreshProfile();
+      await testTelegramNotification(tgToken.trim(), tgChatId.trim());
+      setTgStatus('tested');
+      setTimeout(() => setTgStatus(''), 3000);
+    } catch (err) {
+      console.error(err);
+      
+      let isChatNotFound = false;
+      try {
+        const parsed = JSON.parse(err.message);
+        if (parsed.description && parsed.description.toLowerCase().includes('chat not found')) {
+          isChatNotFound = true;
+        }
+      } catch (e) {
+        if (err.message && err.message.toLowerCase().includes('chat not found')) {
+          isChatNotFound = true;
+        }
+      }
+
+      if (isChatNotFound) {
+        alert(
+          "⚠️ Telegram Setup Error: Chat Not Found!\n\n" +
+          "It looks like you have not started a conversation with your bot in Telegram yet.\n\n" +
+          "How to fix this in 10 seconds:\n" +
+          "1. Open your Telegram app.\n" +
+          "2. Search for your bot's username (the bot you created with @BotFather).\n" +
+          "3. Open the chat with your bot and click the big \"START\" button at the bottom.\n" +
+          "4. Once started, click the \"Save & Test Channel\" button here again!"
+        );
+      } else {
+        alert(`Failed to save or send Telegram test: ${err.message}`);
+      }
+      
+      setTgStatus('error');
+      setTimeout(() => setTgStatus(''), 3000);
+    }
+  };
+
+  const handleNtfySaveAndTest = async () => {
+    if (!ntfyTopic.trim()) {
+      alert('Please enter your unique ntfy.sh Topic Name.');
+      return;
+    }
+    setNtfyStatus('testing');
+    try {
+      await updateUserNotificationSettings(currentUser.uid, {
+        ntfyTopic: ntfyTopic.trim()
+      });
+      await refreshProfile();
+      await testNtfyNotification(ntfyTopic.trim());
+      setNtfyStatus('tested');
+      setTimeout(() => setNtfyStatus(''), 3000);
+    } catch (err) {
+      console.error(err);
+      alert(`Failed to save or send ntfy.sh test: ${err.message}`);
+      setNtfyStatus('error');
+      setTimeout(() => setNtfyStatus(''), 3000);
+    }
+  };
+
+  const handleWaSaveAndTest = async () => {
+    if (!waPhone.trim() || !waKey.trim()) {
+      alert('Please enter both your WhatsApp phone number (with country code, e.g. +91...) and your CallMeBot API key.');
+      return;
+    }
+    setWaStatus('testing');
+    try {
+      await updateUserNotificationSettings(currentUser.uid, {
+        phone: waPhone.trim(),
+        callmebotKey: waKey.trim(),
+      });
+      await refreshProfile();
+      await testWhatsAppNotification(waPhone.trim(), waKey.trim());
+      setWaStatus('tested');
+      setTimeout(() => setWaStatus(''), 3000);
+    } catch (err) {
+      console.error(err);
+      alert(`Failed to save or send WhatsApp test: ${err.message}`);
+      setWaStatus('error');
+      setTimeout(() => setWaStatus(''), 3000);
+    }
+  };
+
+  const handleEmailSaveAndTest = async () => {
+    const email = notifyEmail.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      alert('Please enter a valid email address.');
+      return;
+    }
+    setEmailStatus('testing');
+    try {
+      await updateUserNotificationSettings(currentUser.uid, { notifyEmail: email });
+      await refreshProfile();
+      await testEmailNotification(email, ntfyTopic.trim() || undefined);
+      setEmailStatus('tested');
+      setTimeout(() => setEmailStatus(''), 3000);
+    } catch (err) {
+      console.error(err);
+      alert(`Failed to save or send email test: ${err.message}`);
+      setEmailStatus('error');
+      setTimeout(() => setEmailStatus(''), 3000);
+    }
   };
 
   return (
     <div>
-      <nav style={{
-        background: 'rgba(10,15,26,0.8)', backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid rgba(255,255,255,0.05)',
-        position: 'sticky', top: 0, zIndex: 100,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 32px', height: '80px',
-      }}>
+      <nav className="main-nav">
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
           style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{
@@ -82,7 +213,8 @@ export default function Layout() {
           )}
         </motion.div>
 
-        <div style={{ display: 'flex', gap: '8px' }}>
+        {/* Desktop links */}
+        <div className="nav-desktop-links">
           <NavLink to="/"     style={({ isActive }) => navStyle(isActive, 'cyan')}>
             <Calendar size={18} /> Calendar
           </NavLink>
@@ -91,7 +223,8 @@ export default function Layout() {
           </NavLink>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        {/* Desktop actions */}
+        <div className="nav-desktop-actions">
           {/* Lock toggle — admin only */}
           {isAdmin && (
             <button onClick={handleLockToggle}
@@ -100,12 +233,12 @@ export default function Layout() {
               {isLocked ? <Lock size={18} /> : <Unlock size={18} />}
             </button>
           )}
-          <button onClick={() => setShowLog(v => !v)}
+          <button onClick={() => { setShowInfo(false); setShowLog(v => !v); }}
             style={{ ...iconBtn, color: showLog ? 'var(--accent-cyan)' : 'var(--text-muted)' }}
             title="Activity Log">
             <Activity size={18} />
           </button>
-          <button onClick={() => setShowInfo(v => !v)}
+          <button onClick={() => { setShowLog(false); setShowInfo(v => !v); }}
             style={{ ...iconBtn, color: showInfo ? 'var(--accent-violet)' : 'var(--text-muted)' }}
             title="Family Info & Settings">
             <Users size={18} />
@@ -118,6 +251,32 @@ export default function Layout() {
         </div>
       </nav>
 
+      {/* Floating Bottom Tab Bar for Mobile */}
+      <div className="mobile-bottom-nav">
+        <NavLink to="/" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`}>
+          <Calendar size={20} />
+          <span>Calendar</span>
+        </NavLink>
+        <NavLink to="/tree" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active-violet' : ''}`}>
+          <Network size={20} />
+          <span>Tree</span>
+        </NavLink>
+        <button onClick={() => { setShowLog(false); setShowInfo(v => !v); }}
+          className={`mobile-nav-item ${showInfo ? 'active-violet' : ''}`}>
+          <Users size={20} />
+          <span>Settings</span>
+        </button>
+        <button onClick={() => { setShowInfo(false); setShowLog(v => !v); }}
+          className={`mobile-nav-item ${showLog ? 'active' : ''}`}>
+          <Activity size={20} />
+          <span>Log</span>
+        </button>
+        <button onClick={logoutUser} className="mobile-nav-item">
+          <LogOut size={20} />
+          <span>Exit</span>
+        </button>
+      </div>
+
       {/* Info & Settings drawer */}
       <AnimatePresence>
         {showInfo && (
@@ -125,10 +284,10 @@ export default function Layout() {
             initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
             style={{ overflow: 'hidden', background: 'rgba(10,15,26,0.97)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}
           >
-            <div style={{ padding: '16px 32px', display: 'flex', gap: '40px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+            <div className="settings-drawer-content">
 
               {/* Family ID */}
-              <div>
+              <div style={{ minWidth: '240px' }}>
                 <div style={{ color: 'var(--text-muted)', fontSize: '0.78rem', marginBottom: '6px' }}>Share this ID to invite members</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <code style={{ color: 'var(--accent-cyan)', fontSize: '0.82rem', background: 'rgba(0,243,255,0.08)', padding: '4px 12px', borderRadius: '6px' }}>
@@ -140,38 +299,145 @@ export default function Layout() {
                 </div>
               </div>
 
-              {/* WhatsApp reminder setup via CallMeBot */}
-              <div style={{ minWidth: '320px', maxWidth: '480px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                  <MessageCircle size={14} color="#25D366" />
-                  <span style={{ color: '#25D366', fontSize: '0.82rem', fontWeight: 600 }}>WhatsApp Reminders — free via CallMeBot</span>
+              {/* Notification Preferences tabbed panel */}
+              <div style={{ minWidth: '320px', maxWidth: '520px', background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+                  <Bell size={16} color="var(--accent-cyan)" />
+                  <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--accent-cyan)' }}>Notification Preferences</span>
                 </div>
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginBottom: '10px', lineHeight: 1.6 }}>
-                  <strong style={{ color: 'rgba(255,255,255,0.7)' }}>One-time setup:</strong><br />
-                  1. Save <strong style={{ color: 'white' }}>+34 644 597 418</strong> in WhatsApp contacts as "CallMeBot"<br />
-                  2. Send this exact message to them on WhatsApp:<br />
-                  <code style={{ background: 'rgba(255,255,255,0.08)', padding: '2px 8px', borderRadius: '4px', fontSize: '0.72rem' }}>
-                    I allow callmebot to send me messages
-                  </code><br />
-                  3. You'll receive your API key — paste it below
+                
+                {/* Tabs */}
+                <div style={{ display: 'flex', gap: '4px', background: 'rgba(0,0,0,0.25)', padding: '3px', borderRadius: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
+                  {[
+                    { id: 'telegram', label: 'Telegram', icon: <Send size={12} />,       rgb: '58, 134, 255',  hex: '#3a86ff' },
+                    { id: 'ntfy',     label: 'Push',     icon: <Smartphone size={12} />, rgb: '245, 158, 11', hex: '#f59e0b' },
+                    { id: 'whatsapp', label: 'WhatsApp', icon: <MessageCircle size={12} />, rgb: '37, 211, 102', hex: '#25D366' },
+                    { id: 'email',    label: 'Email',    icon: <Mail size={12} />,       rgb: '131, 56, 236', hex: '#8338ec' },
+                  ].map(tab => (
+                    <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                      style={{
+                        flex: 1, minWidth: '90px', padding: '6px 8px', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', borderRadius: '6px',
+                        background: activeTab === tab.id ? `rgba(${tab.rgb}, 0.15)` : 'transparent',
+                        color: activeTab === tab.id ? tab.hex : 'var(--text-muted)',
+                        border: activeTab === tab.id ? `1px solid rgba(${tab.rgb}, 0.3)` : '1px solid transparent',
+                        transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                      }}>
+                      {tab.icon} {tab.label}
+                    </button>
+                  ))}
                 </div>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  <input type="tel" value={phone} onChange={e => setPhone(e.target.value)}
-                    placeholder="Your number e.g. +919876543210"
-                    style={{ flex: 1, minWidth: '160px', padding: '6px 12px', fontSize: '0.82rem' }} />
-                  <input type="text" value={waKey} onChange={e => setWaKey(e.target.value)}
-                    placeholder="CallMeBot API key"
-                    style={{ flex: 1, minWidth: '130px', padding: '6px 12px', fontSize: '0.82rem' }} />
-                  <button onClick={handleWaSave} className="btn-outline"
-                    style={{ padding: '6px 14px', fontSize: '0.82rem', borderColor: '#25D366', color: '#25D366', whiteSpace: 'nowrap' }}>
-                    {waSaved ? <><Check size={13} color="#25D366" /> Saved!</> : 'Save'}
-                  </button>
+
+                {/* Tab Contents — keyed remount gives the entrance animation;
+                    no AnimatePresence so a slow/blocked exit can never wedge the tabs */}
+                <div>
+                  {activeTab === 'telegram' && (
+                    <motion.div key="telegram" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} transition={{ duration: 0.15 }}>
+                      <div style={{ color: 'var(--text-muted)', fontSize: '0.74rem', marginBottom: '12px', lineHeight: 1.5 }}>
+                        <strong style={{ color: '#3a86ff' }}>100% Free & Super Stable Telegram Setup:</strong><br />
+                        1. Open Telegram, search for <a href="https://t.me/BotFather" target="_blank" rel="noreferrer" style={{ color: '#00f3ff', textDecoration: 'underline' }}>@BotFather</a>. Send <code>/newbot</code> to create a bot and copy the <strong>HTTP API Bot Token</strong>.<br />
+                        2. Search for <a href="https://t.me/userinfobot" target="_blank" rel="noreferrer" style={{ color: '#00f3ff', textDecoration: 'underline' }}>@userinfobot</a>. Start the bot to find your <strong>Chat ID</strong>.<br />
+                        <strong style={{ color: '#ff4444' }}>⚠️ IMPORTANT STEP 3:</strong> Search for your new bot's username on Telegram and click the <strong style={{ color: 'white' }}>\"Start\"</strong> button inside its chat window. (Bots cannot message you until you click Start!).<br />
+                        4. Paste the credentials below:
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <input type="text" value={tgToken} onChange={e => setTgToken(e.target.value)}
+                          placeholder="Bot Token (e.g. 8917381444:AAFueN6R...)"
+                          style={{ padding: '6px 12px', fontSize: '0.82rem' }} />
+                        <input type="text" value={tgChatId} onChange={e => setTgChatId(e.target.value)}
+                          placeholder="Your Chat ID (e.g. 1308454672)"
+                          style={{ padding: '6px 12px', fontSize: '0.82rem' }} />
+                        <button onClick={handleTgSaveAndTest} className="btn-outline" disabled={tgStatus === 'testing'}
+                          style={{ padding: '8px 14px', fontSize: '0.82rem', borderColor: '#3a86ff', color: '#3a86ff', width: '100%', justifyContent: 'center', background: 'rgba(58, 134, 255, 0.05)' }}>
+                          {tgStatus === 'testing' ? 'Testing...' : tgStatus === 'tested' ? <><Check size={13} color="#22c55e" /> Saved & Tested!</> : 'Save & Test Channel'}
+                        </button>
+                      </div>
+                      {userProfile?.telegramBotToken && (
+                        <div style={{ marginTop: '8px', fontSize: '0.72rem', color: '#22c55e', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          ✓ Telegram active — your bot will notify you when events are tomorrow or today
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+
+                  {activeTab === 'ntfy' && (
+                    <motion.div key="ntfy" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} transition={{ duration: 0.15 }}>
+                      <div style={{ color: 'var(--text-muted)', fontSize: '0.74rem', marginBottom: '12px', lineHeight: 1.5 }}>
+                        <strong style={{ color: '#f59e0b' }}>Free Mobile Push Alerts (Zero Accounts/Setup):</strong><br />
+                        1. Install the <strong>ntfy</strong> app on your iOS/Android phone (completely free, open-source).<br />
+                        2. Click "Subscribe to topic" and choose a completely unique, secret name (e.g., <code>birthtree-alerts-yourname</code>).<br />
+                        3. Enter that exact topic name below to receive native push notifications instantly:
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <input type="text" value={ntfyTopic} onChange={e => setNtfyTopic(e.target.value)}
+                          placeholder="Unique Topic Name (e.g. birthtree-alerts-john)"
+                          style={{ padding: '6px 12px', fontSize: '0.82rem' }} />
+                        <button onClick={handleNtfySaveAndTest} className="btn-outline" disabled={ntfyStatus === 'testing'}
+                          style={{ padding: '8px 14px', fontSize: '0.82rem', borderColor: '#f59e0b', color: '#f59e0b', width: '100%', justifyContent: 'center', background: 'rgba(245, 158, 11, 0.05)' }}>
+                          {ntfyStatus === 'testing' ? 'Testing...' : ntfyStatus === 'tested' ? <><Check size={13} color="#22c55e" /> Saved & Tested!</> : 'Save & Test Channel'}
+                        </button>
+                      </div>
+                      {userProfile?.ntfyTopic && (
+                        <div style={{ marginTop: '8px', fontSize: '0.72rem', color: '#22c55e', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          ✓ ntfy.sh active — you will receive a push alert for upcoming family events
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+
+                  {activeTab === 'whatsapp' && (
+                    <motion.div key="whatsapp" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} transition={{ duration: 0.15 }}>
+                      <div style={{ color: 'var(--text-muted)', fontSize: '0.74rem', marginBottom: '12px', lineHeight: 1.5 }}>
+                        <strong style={{ color: '#25D366' }}>Free WhatsApp Reminders (CallMeBot):</strong><br />
+                        1. Save <strong>+34 644 66 32 62</strong> in your phone contacts (any name, e.g. "CallMeBot").<br />
+                        2. Send this exact WhatsApp message to that contact: <code>I allow callmebot to send me messages</code><br />
+                        3. The bot replies with your personal <strong>API key</strong>.<br />
+                        4. Enter your WhatsApp number (with country code) and the key below:
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <input type="text" value={waPhone} onChange={e => setWaPhone(e.target.value)}
+                          placeholder="Phone with country code (e.g. +919876543210)"
+                          style={{ padding: '6px 12px', fontSize: '0.82rem' }} />
+                        <input type="text" value={waKey} onChange={e => setWaKey(e.target.value)}
+                          placeholder="CallMeBot API key (e.g. 123456)"
+                          style={{ padding: '6px 12px', fontSize: '0.82rem' }} />
+                        <button onClick={handleWaSaveAndTest} className="btn-outline" disabled={waStatus === 'testing'}
+                          style={{ padding: '8px 14px', fontSize: '0.82rem', borderColor: '#25D366', color: '#25D366', width: '100%', justifyContent: 'center', background: 'rgba(37, 211, 102, 0.05)' }}>
+                          {waStatus === 'testing' ? 'Testing...' : waStatus === 'tested' ? <><Check size={13} color="#22c55e" /> Saved & Test Sent!</> : 'Save & Test Channel'}
+                        </button>
+                      </div>
+                      {userProfile?.phone && userProfile?.callmebotKey && (
+                        <div style={{ marginTop: '8px', fontSize: '0.72rem', color: '#22c55e', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          ✓ WhatsApp active — you'll get a WhatsApp message when events are tomorrow or today
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+
+                  {activeTab === 'email' && (
+                    <motion.div key="email" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} transition={{ duration: 0.15 }}>
+                      <div style={{ color: 'var(--text-muted)', fontSize: '0.74rem', marginBottom: '12px', lineHeight: 1.5 }}>
+                        <strong style={{ color: '#8338ec' }}>Free Email Reminders (Zero Setup):</strong><br />
+                        Enter your email address below — reminders are delivered through the free ntfy.sh email gateway.
+                        You'll receive a mail from <code>ntfy@ntfy.sh</code> when an event is today or tomorrow.
+                        <em> Check spam on the first email and mark it "Not spam".</em>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <input type="email" value={notifyEmail} onChange={e => setNotifyEmail(e.target.value)}
+                          placeholder="you@example.com"
+                          style={{ padding: '6px 12px', fontSize: '0.82rem' }} />
+                        <button onClick={handleEmailSaveAndTest} className="btn-outline" disabled={emailStatus === 'testing'}
+                          style={{ padding: '8px 14px', fontSize: '0.82rem', borderColor: '#8338ec', color: '#a06cf0', width: '100%', justifyContent: 'center', background: 'rgba(131, 56, 236, 0.05)' }}>
+                          {emailStatus === 'testing' ? 'Testing...' : emailStatus === 'tested' ? <><Check size={13} color="#22c55e" /> Saved & Test Sent!</> : 'Save & Test Channel'}
+                        </button>
+                      </div>
+                      {userProfile?.notifyEmail && (
+                        <div style={{ marginTop: '8px', fontSize: '0.72rem', color: '#22c55e', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          ✓ Email active — reminders go to {userProfile.notifyEmail}
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
                 </div>
-                {userProfile?.callmebotKey && (
-                  <div style={{ marginTop: '6px', fontSize: '0.74rem', color: '#25D366' }}>
-                    ✓ WhatsApp reminders active — you'll receive a message when a birthday or anniversary is tomorrow or today
-                  </div>
-                )}
               </div>
 
               {/* Backup & Restore */}
@@ -187,6 +453,7 @@ export default function Layout() {
         {showLog && (
           <motion.div
             initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+            className="activity-log-flyout"
             style={{
               position: 'fixed', top: '88px', right: '16px', zIndex: 200,
               width: '480px', maxHeight: '60vh', overflowY: 'auto',
