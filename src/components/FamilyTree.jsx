@@ -51,50 +51,87 @@ const mkStraight = (src, srcH, tgt, tgtH, color = '#ff006e') => ({
   style: { stroke: color, strokeWidth: 2 },
 });
 
-// ─── Step 1: build tree edges + junction nodes (without marriage nodes) ───────
-/*
-  Structure produced:
-    Father (bottom) ──step──╮
-                         [junction] ──step──► Son1
-    Mother (bottom) ──step──╯          ──step──► Son2
+// ─── Relationship graph ───────────────────────────────────────────────────────
+// Every person carries structured relations in data:
+//   data.parents  : [personId, personId]  — who their parents are
+//   data.spouseId : personId | null       — who they are married to
+// The layout is derived purely from this graph, so one person can be
+// related to many others and everything reconnects automatically.
 
-  The two step edges from Father and Mother create a natural ┘└ T-bar.
-*/
-const buildTreeGraph = (personNodes) => {
-  const parents  = personNodes.filter(n => classify(n.data.relationship) === 'parent');
-  const children = personNodes.filter(n => classify(n.data.relationship) === 'child');
-  const selfNode = personNodes.find(n =>
-    ['me', 'self', 'root', 'i'].includes((n.data.relationship || '').toLowerCase())
-  );
+const clonePersons = (nodes) => nodes.map(n => ({
+  ...n,
+  data: { ...n.data, parents: [...(n.data.parents || [])], spouseId: n.data.spouseId ?? null },
+}));
 
+const isSelf = (n) =>
+  ['me', 'self', 'root', 'i'].includes((n.data.relationship || '').toLowerCase());
+
+// Legacy trees only stored relationship labels. Derive a structure once so
+// existing data (e.g. Father + Wife + Me + Son) forms the expected family.
+const normalize = (raw) => {
+  const persons = clonePersons(raw);
+  const hasStructure = persons.some(n => n.data.parents.length || n.data.spouseId);
+  if (hasStructure || persons.length < 2) return persons;
+
+  const kind = n => classify(n.data.relationship);
+  const self     = persons.find(isSelf);
+  const parents  = persons.filter(n => kind(n) === 'parent');
+  const spouses  = persons.filter(n => kind(n) === 'spouse');
+  const children = persons.filter(n => kind(n) === 'child');
+  const siblings = persons.filter(n => kind(n) === 'sibling');
+  const marry = (a, b) => { if (a && b) { a.data.spouseId = b.id; b.data.spouseId = a.id; } };
+
+  if (parents.length >= 2)                     marry(parents[0], parents[1]);
+  else if (parents.length === 1 && spouses[0]) marry(parents[0], spouses[0]);
+  else if (self && spouses[0])                 marry(self, spouses[0]);
+
+  if (parents.length) {
+    const couple = [parents[0].id, parents[0].data.spouseId].filter(Boolean);
+    [...(self ? [self] : []), ...children, ...siblings].forEach(c => { c.data.parents = couple; });
+  } else if (self) {
+    const couple = [self.id, self.data.spouseId].filter(Boolean);
+    children.forEach(c => { c.data.parents = couple; });
+  }
+  return persons;
+};
+
+// Build junction dots + step edges from the relation graph.
+// Children with the same parent set share one junction:
+//   ParentA ─╮
+//        [junction] ─► Child1, Child2 …
+//   ParentB ─╯
+const buildGraph = (persons) => {
+  const ids = new Set(persons.map(n => n.id));
   const junctions = [];
-  const edges     = [];
+  const edges = [];
+  const families = new Map();
 
-  const addFamily = (parentNodes, childNodes, juncId) => {
-    if (!parentNodes.length || !childNodes.length) return;
+  persons.forEach(p => {
+    const ps = p.data.parents.filter(id => ids.has(id));
+    if (!ps.length) return;
+    const key = [...ps].sort().join('+');
+    if (!families.has(key)) families.set(key, { parents: ps, children: [] });
+    families.get(key).children.push(p.id);
+  });
+
+  let i = 0;
+  families.forEach(fam => {
+    const jid = `junction-${i++}`;
     junctions.push({
-      id: juncId, type: 'junctionNode',
-      position: { x: 0, y: 0 },
+      id: jid, type: 'junctionNode', position: { x: 0, y: 0 },
       data: {}, selectable: false, deletable: false,
     });
-    parentNodes.forEach(p => edges.push(mkStep(p.id, 'bottom', juncId,  'top')));
-    childNodes.forEach(c  => edges.push(mkStep(juncId, 'bottom', c.id,  'top')));
-  };
-
-  if (parents.length > 0) {
-    addFamily(parents, children, 'junction-main');
-  } else if (selfNode) {
-    addFamily([selfNode], children, 'junction-self');
-  }
-
+    fam.parents.forEach(pid  => edges.push(mkStep(pid, 'bottom', jid, 'top')));
+    fam.children.forEach(cid => edges.push(mkStep(jid, 'bottom', cid, 'top')));
+  });
   return { junctions, edges };
 };
 
-// ─── Step 2: dagre positions person + junction nodes ─────────────────────────
-const runDagre = (nodes, edges) => {
+// Dagre ranks the graph top-down; spouses are pinned to the same rank.
+const runDagre = (nodes, edges, persons) => {
   const g = new dagre.graphlib.Graph();
   g.setDefaultEdgeLabel(() => ({}));
-  g.setGraph({ rankdir: 'TB', ranksep: 110, nodesep: 90 });
+  g.setGraph({ rankdir: 'TB', ranksep: 110, nodesep: 70 });
 
   nodes.forEach(n => {
     if (n.type === 'junctionNode') g.setNode(n.id, { width: JUNC_R * 2, height: JUNC_R * 2 });
@@ -107,60 +144,68 @@ const runDagre = (nodes, edges) => {
     const p = g.node(n.id);
     if (!p) return n;
     if (n.type === 'junctionNode')
-      return { ...n, position: { x: p.x - JUNC_R,      y: p.y - JUNC_R      } };
-    return   { ...n, position: { x: p.x - CARD_W / 2,  y: p.y - CARD_H / 2  } };
+      return { ...n, position: { x: p.x - JUNC_R,     y: p.y - JUNC_R     } };
+    return   { ...n, position: { x: p.x - CARD_W / 2, y: p.y - CARD_H / 2 } };
   });
 };
 
-// ─── Step 3: insert marriage heart between each couple ────────────────────────
-/*
-  Finds pairs of parents at the same generation (same rank / similar Y).
-  Inserts a heart node between them and straight horizontal pink edges.
-  This is purely visual – marriage nodes aren't in dagre.
-*/
-const insertMarriageNodes = (layoutedNodes, layoutedEdges) => {
-  const parents = layoutedNodes
-    .filter(n => n.type === 'personNode' && classify(n.data.relationship) === 'parent')
-    .sort((a, b) => a.position.x - b.position.x);
+// Insert a heart + pink lines between every married couple (purely visual).
+const insertMarriages = (layoutedNodes, layoutedEdges, persons) => {
+  const nodes = [...layoutedNodes];
+  const edges = [...layoutedEdges];
+  const seen = new Set();
 
-  if (parents.length < 2) return { nodes: layoutedNodes, edges: layoutedEdges };
+  persons.forEach(p => {
+    const sid = p.data.spouseId;
+    if (!sid || seen.has(p.id) || seen.has(sid)) return;
+    const a = nodes.find(n => n.id === p.id);
+    const b = nodes.find(n => n.id === sid);
+    if (!a || !b) return;
+    seen.add(p.id); seen.add(sid);
 
-  const extraNodes = [];
-  const extraEdges = [];
+    // Snap the couple onto one row, directly side by side.
+    // Anchor on the partner that hangs from a junction (has parents);
+    // the free-floating spouse moves next to them.
+    const hasParents = n => (persons.find(x => x.id === n.id)?.data.parents || []).length > 0;
+    let anchor = a, other = b;
+    if (!hasParents(a) && hasParents(b))      { anchor = b; other = a; }
+    else if (hasParents(a) === hasParents(b) && b.position.y > a.position.y) { anchor = b; other = a; }
+    other.position = { ...other.position, y: anchor.position.y };
 
-  // Group parents that are at roughly the same Y (same generation)
-  // Simple approach: group the leftmost & rightmost together per junction
-  const left  = parents[0];
-  const right  = parents[parents.length - 1];
+    const GAP = 90;
+    const dist = Math.abs(anchor.position.x - other.position.x);
+    if (dist < CARD_W + 40 || dist > CARD_W + GAP + 10) {
+      const desiredX = anchor.position.x + CARD_W + GAP;
+      // if someone else is already in that slot, swap them into the spouse's old spot
+      const occupant = nodes.find(n => n !== anchor && n !== other && n.type === 'personNode'
+        && Math.abs(n.position.y - anchor.position.y) < 10
+        && Math.abs(n.position.x - desiredX) < CARD_W);
+      if (occupant) occupant.position = { ...occupant.position, x: other.position.x };
+      other.position = { ...other.position, x: desiredX };
+    }
 
-  // Marriage heart: horizontally centred between the two parents, vertically centred on card
-  const lRight  = left.position.x  + CARD_W;         // right edge of left parent
-  const rLeft   = right.position.x;                   // left edge of right parent
-  const hx = (lRight + rLeft) / 2  - HEART_W / 2;
-  const hy = left.position.y       + CARD_H  / 2 - HEART_H / 2;
+    const [left, right] = a.position.x <= b.position.x ? [a, b] : [b, a];
+    const hx = (left.position.x + CARD_W + right.position.x) / 2 - HEART_W / 2;
+    const hy = (left.position.y + right.position.y) / 2 + CARD_H / 2 - HEART_H / 2;
 
-  const mid = 'marriage-main';
-  extraNodes.push({
-    id: mid, type: 'marriageNode',
-    position: { x: hx, y: hy },
-    data: {}, selectable: false, deletable: false, zIndex: 10,
+    const mid = `marriage-${p.id}`;
+    nodes.push({
+      id: mid, type: 'marriageNode', position: { x: hx, y: hy },
+      data: {}, selectable: false, deletable: false, zIndex: 10,
+    });
+    edges.push(mkStraight(left.id,  'couple-r', mid, 'left'));
+    edges.push(mkStraight(right.id, 'couple-l', mid, 'right'));
   });
 
-  // Straight horizontal edges: left parent right-side → heart, right parent left-side → heart
-  extraEdges.push(mkStraight(left.id,  'couple-r', mid, 'left'));
-  extraEdges.push(mkStraight(right.id, 'couple-l', mid, 'right'));
-
-  return {
-    nodes: [...layoutedNodes, ...extraNodes],
-    edges: [...layoutedEdges, ...extraEdges],
-  };
+  return { nodes, edges };
 };
 
 // ─── Full layout pipeline ─────────────────────────────────────────────────────
 const fullLayout = (personNodes) => {
-  const { junctions, edges: treeEdges } = buildTreeGraph(personNodes);
-  const positioned = runDagre([...personNodes, ...junctions], treeEdges);
-  return insertMarriageNodes(positioned, treeEdges);
+  const persons = normalize(personNodes);
+  const { junctions, edges } = buildGraph(persons);
+  const positioned = runDagre([...persons, ...junctions], edges, persons);
+  return insertMarriages(positioned, edges, persons);
 };
 
 // ─── Node components ──────────────────────────────────────────────────────────
@@ -235,22 +280,48 @@ const nodeTypes = { personNode: PersonNode, marriageNode: MarriageNode, junction
 const SPECIAL = new Set(['junctionNode', 'marriageNode', 'unionNode']);
 const toPersonNodes = (nodes) => nodes.filter(n => !SPECIAL.has(n.type));
 
-// Edge for manual "connect to" in the add form
-const buildAddEdge = (newId, toId, rel, edges, nodes) => {
-  const kind = classify(rel);
-  // Find existing junction that toId sources into
-  const juncEdge = edges.find(e => e.source === toId && nodes.find(n => n.id === e.target && n.type === 'junctionNode'));
+// When two people become a couple, children listed under only one of them
+// become children of both — so the whole family hangs from one junction.
+const unifyCouple = (persons, aId, bId) => {
+  persons.forEach(c => {
+    const ps = c.data.parents;
+    if (ps.length === 1 && (ps[0] === aId || ps[0] === bId))
+      c.data.parents = [aId, bId];
+  });
+};
 
-  if (kind === 'parent')  return [mkStep(newId, 'bottom', toId, 'top')];
-  if (kind === 'child')   return juncEdge
-                                  ? [mkStep(juncEdge.target, 'bottom', newId, 'top')]
-                                  : [mkStep(toId, 'bottom', newId, 'top')];
-  if (kind === 'spouse')  return [mkStraight(toId, 'couple-r', newId, 'couple-l', '#ff006e')];
-  if (kind === 'sibling') {
-    const above = edges.find(e => e.target === toId && e.type === 'step');
-    return above ? [mkStep(above.source, 'bottom', newId, 'top')] : [mkStep(toId, 'bottom', newId, 'top')];
+// Apply a new member's relationship to the relation graph.
+// Mutates `persons` (already cloned) and returns the new node.
+const applyRelation = (persons, newNode, connectToId, relationship) => {
+  const target = persons.find(n => n.id === connectToId);
+  if (!target) return newNode;
+  const kind = classify(relationship);
+
+  if (kind === 'parent') {
+    // New person is a parent of the target; if the target already had a
+    // parent, the two parents become a couple automatically.
+    const existing = persons.find(n => n.id === target.data.parents[0]);
+    target.data.parents = [...new Set([...target.data.parents, newNode.id])].slice(0, 2);
+    if (existing && !existing.data.spouseId && !newNode.data.spouseId) {
+      existing.data.spouseId = newNode.id;
+      newNode.data.spouseId  = existing.id;
+      unifyCouple([...persons, newNode], existing.id, newNode.id);
+    }
+  } else if (kind === 'child') {
+    // Child of the target AND the target's spouse (both parents)
+    newNode.data.parents = [target.id, target.data.spouseId].filter(Boolean);
+  } else if (kind === 'spouse') {
+    newNode.data.spouseId = target.id;
+    target.data.spouseId  = newNode.id;
+    unifyCouple([...persons, newNode], target.id, newNode.id);
+  } else if (kind === 'sibling') {
+    // Same parents as the target
+    newNode.data.parents = [...target.data.parents];
+  } else {
+    // Generic relative — hang below the target
+    newNode.data.parents = [target.id];
   }
-  return [mkStep(toId, 'bottom', newId, 'top')];
+  return newNode;
 };
 
 // ─── Tree logic component ─────────────────────────────────────────────────────
@@ -283,23 +354,35 @@ function TreeLogic() {
   )), []);
   const onSelectionChange = useCallback(({ nodes: sel }) => setSelectedNodes(sel), []);
 
-  // Add member
+  // Add member — records the relation in the graph, then re-lays-out
   const handleAdd = async ({ connectToId, photo: rawPhoto, ...nodeData }) => {
-    const photo  = rawPhoto ? await compressImage(rawPhoto) : null;
-    const newId   = uuidv4();
-    const newNode = { id: newId, type: 'personNode', position: { x: 0, y: 0 }, data: { ...nodeData, photo } };
-    const persons = [...toPersonNodes(nodes), newNode];
-    const { nodes: n, edges: e } = fullLayout(persons);
+    const photo   = rawPhoto ? await compressImage(rawPhoto) : null;
+    const persons = normalize(toPersonNodes(nodes));
+    const newNode = {
+      id: uuidv4(), type: 'personNode', position: { x: 0, y: 0 },
+      data: { ...nodeData, photo, parents: [], spouseId: null },
+    };
+    applyRelation(persons, newNode, connectToId, nodeData.relationship);
+    const { nodes: n, edges: e } = fullLayout([...persons, newNode]);
     setNodes(n); setEdges(e);
     persist(n);
     setIsAddOpen(false);
     setTimeout(() => window.requestAnimationFrame(() => fitView()), 80);
   };
 
-  // Delete selected person nodes
+  // Delete selected person nodes and strip references to them
   const handleDelete = () => {
     const ids = new Set(selectedNodes.map(n => n.id));
-    const persons = toPersonNodes(nodes).filter(n => !ids.has(n.id));
+    const persons = clonePersons(toPersonNodes(nodes))
+      .filter(n => !ids.has(n.id))
+      .map(n => ({
+        ...n,
+        data: {
+          ...n.data,
+          parents: n.data.parents.filter(p => !ids.has(p)),
+          spouseId: ids.has(n.data.spouseId) ? null : n.data.spouseId,
+        },
+      }));
     const { nodes: n, edges: e } = fullLayout(persons);
     setNodes(n); setEdges(e);
     persist(n);
@@ -447,7 +530,7 @@ function AddMemberModal({ existingNodes, onClose, onAdded }) {
               <label style={{ display: 'block', marginBottom: 8, color: 'var(--text-muted)' }}>
                 Whose {form.relationship || 'relative'}?
               </label>
-              <select value={form.connectToId} onChange={e => setForm(f => ({ ...f, connectToId: e.target.value }))}>
+              <select required value={form.connectToId} onChange={e => setForm(f => ({ ...f, connectToId: e.target.value }))}>
                 <option value="">— select a person —</option>
                 {existingNodes.map(n => (
                   <option key={n.id} value={n.id}>{n.data.name} ({n.data.relationship})</option>
