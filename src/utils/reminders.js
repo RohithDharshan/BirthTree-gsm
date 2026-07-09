@@ -9,7 +9,6 @@ const STORAGE_KEY    = 'bt_notified_date';
 const TG_SENT_KEY    = 'bt_tg_sent_date';
 const NTFY_SENT_KEY  = 'bt_ntfy_sent_date';
 const WA_SENT_KEY    = 'bt_wa_sent_date';
-const EMAIL_SENT_KEY = 'bt_email_sent_date';
 
 const daysUntil = (event) => {
   const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -80,27 +79,6 @@ export const sendWhatsAppNotification = async (text, phone, apikey) => {
   await fetch(url, { method: 'GET', mode: 'no-cors' });
 };
 
-// Send Email via Web3Forms (free 250/month, works from the browser)
-// Setup: user enters their email at https://web3forms.com and receives a
-// personal Access Key by mail. Emails are then delivered to that address.
-export const sendEmailNotification = async (text, accessKey) => {
-  const response = await fetch('https://api.web3forms.com/submit', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-    body: JSON.stringify({
-      access_key: accessKey,
-      subject: '🌳 BirthTree Reminder',
-      from_name: 'BirthTree',
-      message: text,
-    }),
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok || data.success === false) {
-    throw new Error(data.message || `Email service error (HTTP ${response.status})`);
-  }
-  return data;
-};
-
 // ─── Test Senders ──────────────────────────────────────────────────────────
 
 export const testTelegramNotification = async (botToken, chatId) => {
@@ -117,11 +95,6 @@ export const testNtfyNotification = async (topic) => {
 export const testWhatsAppNotification = async (phone, apikey) => {
   const text = `🌳 BirthTree Connected! This is a test message confirming your WhatsApp reminders are set up correctly. 🎉`;
   return sendWhatsAppNotification(text, phone, apikey);
-};
-
-export const testEmailNotification = async (accessKey) => {
-  const text = `🌳 BirthTree Connected!\n\nThis is a test email confirming your email reminders are set up correctly. 🎉`;
-  return sendEmailNotification(text, accessKey);
 };
 
 // ─── Core Reminder Runner ───────────────────────────────────────────────────
@@ -191,18 +164,8 @@ export const sendExternalReminders = async (events, userProfile) => {
     }
   }
 
-  // 4. Email via Web3Forms
-  if (userProfile?.web3formsKey) {
-    if (localStorage.getItem(EMAIL_SENT_KEY) !== today) {
-      try {
-        await sendEmailNotification(plainText, userProfile.web3formsKey);
-        localStorage.setItem(EMAIL_SENT_KEY, today);
-        console.log('Email reminder sent');
-      } catch (err) {
-        console.warn('Email reminder failed:', err);
-      }
-    }
-  }
+  // Email reminders are sent server-side by /api/send-reminders (daily
+  // Vercel cron) from the configured Gmail account to all opted-in members.
 };
 
 // Backward compatibility alias for Calendar.jsx
