@@ -42,6 +42,7 @@ export default function Layout() {
   const [waPhone,      setWaPhone]      = useState(userProfile?.phone || '');
   const [waKey,        setWaKey]        = useState(userProfile?.callmebotKey || '');
   const [notifyEmail,  setNotifyEmail]  = useState(userProfile?.notifyEmail || '');
+  const [w3fKey,       setW3fKey]       = useState(userProfile?.web3formsKey || '');
 
   // Status indicators for testing / saving
   const [tgStatus,     setTgStatus]     = useState('');
@@ -58,6 +59,7 @@ export default function Layout() {
       setWaPhone(userProfile.phone || '');
       setWaKey(userProfile.callmebotKey || '');
       setNotifyEmail(userProfile.notifyEmail || '');
+      setW3fKey(userProfile.web3formsKey || '');
     }
   }, [userProfile]);
 
@@ -170,15 +172,20 @@ export default function Layout() {
 
   const handleEmailSaveAndTest = async () => {
     const email = notifyEmail.trim();
+    const key = w3fKey.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       alert('Please enter a valid email address.');
       return;
     }
+    if (!key) {
+      alert('Please enter your Web3Forms Access Key — get it free at web3forms.com by entering your email.');
+      return;
+    }
     setEmailStatus('testing');
     try {
-      await updateUserNotificationSettings(currentUser.uid, { notifyEmail: email });
+      await updateUserNotificationSettings(currentUser.uid, { notifyEmail: email, web3formsKey: key });
       await refreshProfile();
-      await testEmailNotification(email, ntfyTopic.trim() || undefined);
+      await testEmailNotification(key);
       setEmailStatus('tested');
       setTimeout(() => setEmailStatus(''), 3000);
     } catch (err) {
@@ -416,21 +423,25 @@ export default function Layout() {
                   {activeTab === 'email' && (
                     <motion.div key="email" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} transition={{ duration: 0.15 }}>
                       <div style={{ color: 'var(--text-muted)', fontSize: '0.74rem', marginBottom: '12px', lineHeight: 1.5 }}>
-                        <strong style={{ color: '#8338ec' }}>Free Email Reminders (Zero Setup):</strong><br />
-                        Enter your email address below — reminders are delivered through the free ntfy.sh email gateway.
-                        You'll receive a mail from <code>ntfy@ntfy.sh</code> when an event is today or tomorrow.
+                        <strong style={{ color: '#8338ec' }}>Free Email Reminders (1-minute setup):</strong><br />
+                        1. Go to <a href="https://web3forms.com" target="_blank" rel="noreferrer" style={{ color: 'var(--accent-cyan)', textDecoration: 'underline' }}>web3forms.com</a> and enter your email address.<br />
+                        2. They instantly send your personal <strong>Access Key</strong> to your inbox (free, 250 emails/month).<br />
+                        3. Paste your email and that key below — reminders arrive when an event is today or tomorrow.
                         <em> Check spam on the first email and mark it "Not spam".</em>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <input type="email" value={notifyEmail} onChange={e => setNotifyEmail(e.target.value)}
                           placeholder="you@example.com"
                           style={{ padding: '6px 12px', fontSize: '0.82rem' }} />
+                        <input type="text" value={w3fKey} onChange={e => setW3fKey(e.target.value)}
+                          placeholder="Web3Forms Access Key (e.g. a1b2c3d4-…)"
+                          style={{ padding: '6px 12px', fontSize: '0.82rem' }} />
                         <button onClick={handleEmailSaveAndTest} className="btn-outline" disabled={emailStatus === 'testing'}
                           style={{ padding: '8px 14px', fontSize: '0.82rem', borderColor: '#8338ec', color: '#a06cf0', width: '100%', justifyContent: 'center', background: 'rgba(131, 56, 236, 0.05)' }}>
                           {emailStatus === 'testing' ? 'Testing...' : emailStatus === 'tested' ? <><Check size={13} color="#22c55e" /> Saved & Test Sent!</> : 'Save & Test Channel'}
                         </button>
                       </div>
-                      {userProfile?.notifyEmail && (
+                      {userProfile?.notifyEmail && userProfile?.web3formsKey && (
                         <div style={{ marginTop: '8px', fontSize: '0.72rem', color: '#22c55e', display: 'flex', alignItems: 'center', gap: '4px' }}>
                           ✓ Email active — reminders go to {userProfile.notifyEmail}
                         </div>

@@ -80,20 +80,25 @@ export const sendWhatsAppNotification = async (text, phone, apikey) => {
   await fetch(url, { method: 'GET', mode: 'no-cors' });
 };
 
-// Send Email via ntfy.sh's email gateway (free, ~limited per day — fine for reminders)
-export const sendEmailNotification = async (text, email, topic) => {
-  const response = await fetch(`https://ntfy.sh/${topic || 'birthtree-email-relay'}`, {
+// Send Email via Web3Forms (free 250/month, works from the browser)
+// Setup: user enters their email at https://web3forms.com and receives a
+// personal Access Key by mail. Emails are then delivered to that address.
+export const sendEmailNotification = async (text, accessKey) => {
+  const response = await fetch('https://api.web3forms.com/submit', {
     method: 'POST',
-    headers: {
-      'Title': 'BirthTree Reminder',
-      'Email': email,
-      'Tags': 'birthday',
-    },
-    body: text,
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify({
+      access_key: accessKey,
+      subject: '🌳 BirthTree Reminder',
+      from_name: 'BirthTree',
+      message: text,
+    }),
   });
-  if (!response.ok) {
-    throw new Error(`Email relay error: ${response.statusText}`);
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data.success === false) {
+    throw new Error(data.message || `Email service error (HTTP ${response.status})`);
   }
+  return data;
 };
 
 // ─── Test Senders ──────────────────────────────────────────────────────────
@@ -114,9 +119,9 @@ export const testWhatsAppNotification = async (phone, apikey) => {
   return sendWhatsAppNotification(text, phone, apikey);
 };
 
-export const testEmailNotification = async (email, topic) => {
+export const testEmailNotification = async (accessKey) => {
   const text = `🌳 BirthTree Connected!\n\nThis is a test email confirming your email reminders are set up correctly. 🎉`;
-  return sendEmailNotification(text, email, topic);
+  return sendEmailNotification(text, accessKey);
 };
 
 // ─── Core Reminder Runner ───────────────────────────────────────────────────
@@ -186,11 +191,11 @@ export const sendExternalReminders = async (events, userProfile) => {
     }
   }
 
-  // 4. Email via ntfy gateway
-  if (userProfile?.notifyEmail) {
+  // 4. Email via Web3Forms
+  if (userProfile?.web3formsKey) {
     if (localStorage.getItem(EMAIL_SENT_KEY) !== today) {
       try {
-        await sendEmailNotification(plainText, userProfile.notifyEmail, userProfile.ntfyTopic);
+        await sendEmailNotification(plainText, userProfile.web3formsKey);
         localStorage.setItem(EMAIL_SENT_KEY, today);
         console.log('Email reminder sent');
       } catch (err) {
