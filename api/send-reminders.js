@@ -10,15 +10,16 @@
 //   FIREBASE_SERVICE_ACCOUNT full JSON of a Firebase service-account key
 //   CRON_SECRET              any random string; Vercel Cron sends it automatically
 
-import admin from 'firebase-admin';
+import { initializeApp, cert, getApps } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
 import nodemailer from 'nodemailer';
 
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
+if (!getApps().length) {
+  initializeApp({
+    credential: cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
   });
 }
-const db = admin.firestore();
+const db = getFirestore();
 
 const daysUntil = (dateStr) => {
   const today = new Date(); today.setHours(0, 0, 0, 0);
