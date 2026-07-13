@@ -1,21 +1,29 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Outfit:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --bg-dark: #070b14;
-  --bg-card: rgba(15, 22, 38, 0.6);
-  --bg-card-hover: rgba(22, 33, 53, 0.85);
-  --accent-cyan: #22e4f5;
-  --accent-blue: #4d8dff;
-  --accent-violet: #9257f0;
-  --accent-pink: #ff4d8d;
-  --text-main: #f4f7fb;
-  --text-muted: #9aa5b5;
-  --border-color: rgba(255, 255, 255, 0.09);
-  --glow-cyan: 0 0 18px rgba(34, 228, 245, 0.35);
-  --glow-violet: 0 0 18px rgba(146, 87, 240, 0.35);
+  /* Warm premium dark — champagne gold on rich charcoal */
+  --bg-dark: #0e0c09;
+  --bg-card: rgba(26, 22, 17, 0.55);
+  --bg-card-hover: rgba(36, 31, 24, 0.8);
+  --accent-cyan: #e6b34f;    /* primary accent: champagne gold */
+  --accent-blue: #d9a04a;    /* deeper gold for gradients */
+  --accent-violet: #c96f85;  /* muted rose — anniversaries, love */
+  --accent-pink: #c96f85;
+  --text-main: #f5f1ea;
+  --text-muted: #a89f93;
+  --border-color: rgba(245, 241, 234, 0.09);
+  --glow-cyan: 0 0 20px rgba(230, 179, 79, 0.28);
+  --glow-violet: 0 0 20px rgba(201, 111, 133, 0.28);
   --radius-md: 12px;
   --radius-lg: 18px;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --font-display: 'Fraunces', Georgia, serif;
+}
+
+h1, h2, h3, .month-title {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
 }
 
 * {
@@ -25,19 +33,16 @@
   font-family: 'Outfit', sans-serif;
 }
 
+html { scroll-behavior: smooth; }
+
 body {
   background-color: var(--bg-dark);
   color: var(--text-main);
-  background-image:
-    linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
-  background-size: 48px 48px;
-  background-attachment: fixed;
   overflow-x: hidden;
   min-height: 100vh;
 }
 
-/* Slow-drifting aurora glow behind everything */
+/* Slow-drifting warm ambient light behind everything */
 body::before {
   content: '';
   position: fixed;
@@ -45,10 +50,21 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 40% 35% at 18% 40%, rgba(77, 141, 255, 0.16), transparent 70%),
-    radial-gradient(ellipse 35% 40% at 82% 25%, rgba(146, 87, 240, 0.15), transparent 70%),
-    radial-gradient(ellipse 45% 35% at 55% 88%, rgba(34, 228, 245, 0.08), transparent 70%);
-  animation: aurora-drift 26s var(--ease) infinite alternate;
+    radial-gradient(ellipse 45% 40% at 20% 25%, rgba(230, 179, 79, 0.09), transparent 70%),
+    radial-gradient(ellipse 40% 45% at 82% 65%, rgba(201, 111, 133, 0.07), transparent 70%),
+    radial-gradient(ellipse 55% 40% at 55% 95%, rgba(184, 134, 60, 0.06), transparent 70%);
+  animation: aurora-drift 30s var(--ease) infinite alternate;
+}
+
+/* Film grain — breaks digital flatness */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 @keyframes aurora-drift {
@@ -114,11 +130,11 @@ body::before {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  box-shadow: 0 4px 16px rgba(77, 141, 255, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 16px rgba(217, 160, 74, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .btn-primary:hover {
-  box-shadow: var(--glow-violet), 0 8px 24px rgba(146, 87, 240, 0.35);
+  box-shadow: var(--glow-violet), 0 8px 24px rgba(201, 111, 133, 0.35);
   transform: translateY(-2px);
 }
 
@@ -127,9 +143,9 @@ body::before {
 }
 
 .btn-outline {
-  background: rgba(34, 228, 245, 0.04);
+  background: rgba(230, 179, 79, 0.04);
   color: var(--accent-cyan);
-  border: 1px solid rgba(34, 228, 245, 0.45);
+  border: 1px solid rgba(230, 179, 79, 0.45);
   padding: 10px 24px;
   border-radius: 10px;
   font-weight: 600;
@@ -145,7 +161,7 @@ body::before {
 
 .btn-outline:hover {
   box-shadow: var(--glow-cyan);
-  background: rgba(34, 228, 245, 0.12);
+  background: rgba(230, 179, 79, 0.12);
   transform: translateY(-1px);
 }
 
@@ -171,13 +187,13 @@ input, select, textarea {
 input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--accent-cyan);
-  box-shadow: 0 0 8px rgba(34, 228, 245, 0.2);
+  box-shadow: 0 0 8px rgba(230, 179, 79, 0.2);
 }
 
 select {
   appearance: none;
   -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2300f3ff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23e6b34f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 14px center;
   padding-right: 38px;
@@ -185,7 +201,7 @@ select {
 }
 
 select option {
-  background: #101827;
+  background: #1a1611;
   color: var(--text-main);
 }
 
@@ -195,8 +211,8 @@ input[type="file"] {
 }
 
 input[type="file"]::file-selector-button {
-  background: linear-gradient(135deg, rgba(34,228,245,0.12), rgba(131,56,236,0.12));
-  border: 1px solid rgba(34, 228, 245, 0.35);
+  background: linear-gradient(135deg, rgba(230,179,79,0.12), rgba(201,111,133,0.12));
+  border: 1px solid rgba(230, 179, 79, 0.35);
   color: var(--accent-cyan);
   padding: 8px 16px;
   border-radius: 8px;
@@ -208,7 +224,7 @@ input[type="file"]::file-selector-button {
 }
 
 input[type="file"]::file-selector-button:hover {
-  background: rgba(34, 228, 245, 0.18);
+  background: rgba(230, 179, 79, 0.18);
   box-shadow: var(--glow-cyan);
 }
 
@@ -234,8 +250,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-size: 0.75rem;
   font-weight: 700;
   color: var(--accent-cyan);
-  background: rgba(34, 228, 245, 0.1);
-  border: 1px solid rgba(34, 228, 245, 0.3);
+  background: rgba(230, 179, 79, 0.1);
+  border: 1px solid rgba(230, 179, 79, 0.3);
   border-radius: 999px;
   padding: 3px 12px;
 }
@@ -256,7 +272,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .event-card:hover {
   background: rgba(255, 255, 255, 0.08);
   transform: translateY(-2px);
-  border-color: rgba(34, 228, 245, 0.3);
+  border-color: rgba(230, 179, 79, 0.3);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
@@ -274,21 +290,20 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 .month-card:hover {
-  transform: translateY(-4px);
   box-shadow:
     0 16px 48px rgba(0, 0, 0, 0.45),
-    0 0 24px rgba(34, 228, 245, 0.06),
+    0 0 24px rgba(230, 179, 79, 0.06),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .month-title {
   text-align: center;
   margin-bottom: 14px;
-  font-size: 1.15rem;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  background: linear-gradient(90deg, var(--accent-cyan), var(--accent-blue));
+  font-size: 1.3rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  font-style: italic;
+  background: linear-gradient(90deg, var(--accent-cyan), #f0d9a8);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -340,7 +355,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   border-color: var(--accent-cyan);
   color: var(--accent-cyan);
   font-weight: 700;
-  box-shadow: inset 0 0 12px rgba(34, 228, 245, 0.15);
+  box-shadow: inset 0 0 12px rgba(230, 179, 79, 0.15);
 }
 
 .day-cell.has-event {
@@ -477,12 +492,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     left: 16px;
     right: 16px;
     height: 64px;
-    background: rgba(10, 15, 26, 0.85);
+    background: rgba(14, 12, 9, 0.85);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 20px;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 0 10px rgba(34, 228, 245, 0.15);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 0 10px rgba(230, 179, 79, 0.15);
     z-index: 1000;
     justify-content: space-around;
     align-items: center;
@@ -511,13 +526,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   
   .mobile-nav-item.active {
     color: var(--accent-cyan) !important;
-    background: rgba(34, 228, 245, 0.06);
+    background: rgba(230, 179, 79, 0.06);
     text-shadow: var(--glow-cyan);
   }
   
   .mobile-nav-item.active-violet {
     color: var(--accent-violet) !important;
-    background: rgba(131, 56, 236, 0.06);
+    background: rgba(201, 111, 133, 0.06);
     text-shadow: var(--glow-violet);
   }
 

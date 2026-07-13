@@ -28,7 +28,7 @@ const photoFill = (evt, onClick, style = {}) => (
     ) : (
       <div style={{
         width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: evt.type === 'birthday' ? 'rgba(239,68,68,0.35)' : 'rgba(107,114,128,0.35)',
+        background: evt.type === 'birthday' ? 'rgba(230,179,79,0.35)' : 'rgba(201,111,133,0.35)',
         fontSize: '0.8rem', fontWeight: 'bold', color: 'white',
       }}>
         {evt.name.charAt(0)}
@@ -41,7 +41,7 @@ const renderDayEvents = (dayEvents, setSelectedEvent) => {
   const count = dayEvents.length;
   if (count === 0) return null;
 
-  const borderColor = dayEvents[0].type === 'birthday' ? '#ef4444' : '#6b7280';
+  const borderColor = dayEvents[0].type === 'birthday' ? '#e6b34f' : '#c96f85';
 
   // All layouts are absolutely positioned to fill the entire cell
   const base = { position: 'absolute', inset: 0, overflow: 'hidden', borderRadius: '4px' };
@@ -124,7 +124,7 @@ export default function CalendarView() {
     if (!calendarRef.current) return;
     try {
       const blob = await toBlob(calendarRef.current, {
-        backgroundColor: '#0a0f1a',
+        backgroundColor: '#0e0c09',
         pixelRatio: 2,
         useCORS: true,
         allowTaint: true,
@@ -185,7 +185,7 @@ export default function CalendarView() {
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
           style={{
             marginBottom: '24px', padding: '14px 20px',
-            background: 'linear-gradient(135deg,rgba(245,158,11,0.12),rgba(239,68,68,0.08))',
+            background: 'linear-gradient(135deg,rgba(245,158,11,0.12),rgba(230,179,79,0.08))',
             border: '1px solid rgba(245,158,11,0.35)', borderRadius: '12px',
             display: 'flex', gap: '12px', alignItems: 'flex-start',
           }}>
@@ -219,7 +219,7 @@ export default function CalendarView() {
                   }}>
                     <span style={{ fontSize: '0.85rem' }}>
                       {evt.type === 'birthday' ? '🎂' : '💍'} <strong>{evt.name}</strong>
-                      <span style={{ color: diff === 0 ? '#ef4444' : '#f59e0b', marginLeft: 6 }}>{label}</span>
+                      <span style={{ color: diff === 0 ? '#e6b34f' : '#f59e0b', marginLeft: 6 }}>{label}</span>
                     </span>
                     <a href={`https://wa.me/?text=${waText}`} target="_blank" rel="noreferrer"
                       title="Share on WhatsApp"
@@ -271,7 +271,7 @@ export default function CalendarView() {
         </div>
       </div>
 
-      <div ref={calendarRef} className="calendar-grid">
+      <div ref={calendarRef} className="calendar-grid" style={{ perspective: '1400px' }}>
         {MONTHS.map((month, monthIndex) => {
           if (selectedMonth !== 'all' && Number(selectedMonth) !== monthIndex) return null;
 
@@ -283,10 +283,12 @@ export default function CalendarView() {
 
           return (
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: monthIndex * 0.05 }}
+              initial={{ opacity: 0, y: 60, rotateX: 18, scale: 0.94 }}
+              whileInView={{ opacity: 1, y: 0, rotateX: 0, scale: 1 }}
+              viewport={{ once: true, margin: '-60px' }}
+              transition={{ type: 'spring', stiffness: 90, damping: 16, delay: (monthIndex % 4) * 0.07 }}
+              whileHover={{ y: -6, rotateX: 2, transition: { type: 'spring', stiffness: 300, damping: 20 } }}
+              style={{ transformStyle: 'preserve-3d' }}
               key={month}
               className="glass-panel month-card"
             >
@@ -369,9 +371,9 @@ export default function CalendarView() {
               {filtered.map(evt => (
                 <div key={evt.id} className="event-card" onClick={() => setSelectedEvent(evt)}>
                   {evt.photo ? (
-                    <img src={evt.photo} alt={evt.name} style={{ width: '52px', height: '52px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: `2px solid ${evt.type === 'birthday' ? '#ef4444' : '#6b7280'}` }} />
+                    <img src={evt.photo} alt={evt.name} style={{ width: '52px', height: '52px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: `2px solid ${evt.type === 'birthday' ? '#e6b34f' : '#c96f85'}` }} />
                   ) : (
-                    <div style={{ width: '52px', height: '52px', borderRadius: '50%', flexShrink: 0, background: evt.type === 'birthday' ? 'rgba(239,68,68,0.2)' : 'rgba(107,114,128,0.2)', border: `2px solid ${evt.type === 'birthday' ? '#ef4444' : '#6b7280'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', fontWeight: 700 }}>
+                    <div style={{ width: '52px', height: '52px', borderRadius: '50%', flexShrink: 0, background: evt.type === 'birthday' ? 'rgba(230,179,79,0.2)' : 'rgba(201,111,133,0.2)', border: `2px solid ${evt.type === 'birthday' ? '#e6b34f' : '#c96f85'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', fontWeight: 700 }}>
                       {evt.name.charAt(0)}
                     </div>
                   )}
@@ -462,7 +464,7 @@ function DayEventsModal({ day, month, dayEvents, onClose, onSelectEvent }) {
                 padding: '14px 16px',
                 background: 'rgba(255,255,255,0.06)',
                 borderRadius: '12px',
-                border: `1px solid ${evt.type === 'birthday' ? 'rgba(239,68,68,0.4)' : 'rgba(107,114,128,0.4)'}`,
+                border: `1px solid ${evt.type === 'birthday' ? 'rgba(230,179,79,0.4)' : 'rgba(201,111,133,0.4)'}`,
                 cursor: 'pointer', transition: 'background 0.2s',
               }}
               onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.12)'}
@@ -471,13 +473,13 @@ function DayEventsModal({ day, month, dayEvents, onClose, onSelectEvent }) {
               {evt.photo ? (
                 <img src={evt.photo} alt={evt.name} style={{
                   width: '52px', height: '52px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0,
-                  border: `2px solid ${evt.type === 'birthday' ? '#ef4444' : '#6b7280'}`,
+                  border: `2px solid ${evt.type === 'birthday' ? '#e6b34f' : '#c96f85'}`,
                 }} />
               ) : (
                 <div style={{
                   width: '52px', height: '52px', borderRadius: '50%', flexShrink: 0,
-                  background: evt.type === 'birthday' ? 'rgba(239,68,68,0.25)' : 'rgba(107,114,128,0.25)',
-                  border: `2px solid ${evt.type === 'birthday' ? '#ef4444' : '#6b7280'}`,
+                  background: evt.type === 'birthday' ? 'rgba(230,179,79,0.25)' : 'rgba(201,111,133,0.25)',
+                  border: `2px solid ${evt.type === 'birthday' ? '#e6b34f' : '#c96f85'}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem', fontWeight: 'bold',
                 }}>
                   {evt.name.charAt(0)}
@@ -595,9 +597,9 @@ function EventDetailsModal({ event, onClose, onDelete, canEdit }) {
         style={{ textAlign: 'center' }}
       >
         {event.photo ? (
-          <img src={event.photo} alt={event.name} style={{ width: '120px', height: '120px', borderRadius: '50%', objectFit: 'cover', margin: '0 auto 20px', border: `4px solid ${event.type === 'birthday' ? '#ef4444' : '#6b7280'}` }} />
+          <img src={event.photo} alt={event.name} style={{ width: '120px', height: '120px', borderRadius: '50%', objectFit: 'cover', margin: '0 auto 20px', border: `4px solid ${event.type === 'birthday' ? '#e6b34f' : '#c96f85'}` }} />
         ) : (
-          <div style={{ width: '120px', height: '120px', borderRadius: '50%', background: 'var(--bg-card)', border: `4px solid ${event.type === 'birthday' ? '#ef4444' : '#6b7280'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: '2rem' }}>
+          <div style={{ width: '120px', height: '120px', borderRadius: '50%', background: 'var(--bg-card)', border: `4px solid ${event.type === 'birthday' ? '#e6b34f' : '#c96f85'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: '2rem' }}>
             {event.name.charAt(0)}
           </div>
         )}

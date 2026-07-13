@@ -41,10 +41,10 @@ const mkStep = (src, srcH, tgt, tgtH) => ({
   id: uuidv4(), source: src, sourceHandle: srcH,
   target: tgt, targetHandle: tgtH,
   type: 'step', animated: false,
-  style: { stroke: '#3a86ff', strokeWidth: 2.5 },
+  style: { stroke: '#d9a04a', strokeWidth: 2.5 },
 });
 
-const mkStraight = (src, srcH, tgt, tgtH, color = '#ff006e') => ({
+const mkStraight = (src, srcH, tgt, tgtH, color = '#c96f85') => ({
   id: uuidv4(), source: src, sourceHandle: srcH,
   target: tgt, targetHandle: tgtH,
   type: 'straight', animated: false,
@@ -210,15 +210,15 @@ const fullLayout = (personNodes) => {
 
 // ─── Node components ──────────────────────────────────────────────────────────
 const invisible = { background: 'transparent', border: 'none', width: 4, height: 4, opacity: 0, pointerEvents: 'none' };
-const cyan      = { background: '#00f3ff', width: 10, height: 10, border: '2px solid #00f3ff' };
+const cyan      = { background: '#e6b34f', width: 10, height: 10, border: '2px solid #e6b34f' };
 
 const PersonNode = ({ data, selected }) => (
   <div style={{
-    background: 'rgba(16,24,39,0.9)', backdropFilter: 'blur(8px)',
-    border: `2px solid ${selected ? '#00f3ff' : 'rgba(255,255,255,0.12)'}`,
+    background: 'rgba(26,22,17,0.9)', backdropFilter: 'blur(8px)',
+    border: `2px solid ${selected ? '#e6b34f' : 'rgba(255,255,255,0.12)'}`,
     borderRadius: 16, padding: 16, width: CARD_W,
     display: 'flex', flexDirection: 'column', alignItems: 'center',
-    boxShadow: selected ? '0 0 24px rgba(0,243,255,0.5)' : '0 8px 32px rgba(0,0,0,0.4)',
+    boxShadow: selected ? '0 0 24px rgba(230,179,79,0.5)' : '0 8px 32px rgba(0,0,0,0.4)',
     color: '#fff', transition: 'all 0.2s',
   }}>
     {/* Tree connection handles (visible) */}
@@ -230,14 +230,14 @@ const PersonNode = ({ data, selected }) => (
 
     {data.photo
       ? <img src={data.photo} alt={data.name}
-          style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', marginBottom: 10, border: '2px solid #8338ec' }} />
-      : <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#162135', border: '2px solid #8338ec',
+          style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', marginBottom: 10, border: '2px solid #c96f85' }} />
+      : <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#241f18', border: '2px solid #c96f85',
           display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 10, fontSize: '1.3rem', fontWeight: 700 }}>
           {data.name?.charAt(0)}
         </div>
     }
     <div style={{ fontWeight: 600, fontSize: '1rem', textAlign: 'center',
-      background: 'linear-gradient(90deg,#00f3ff,#8338ec)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+      background: 'linear-gradient(90deg,#e6b34f,#c96f85)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
       {data.name}
     </div>
     <div style={{ fontSize: '0.8rem', color: '#adb5bd', marginTop: 3, textAlign: 'center' }}>
@@ -265,9 +265,9 @@ const MarriageNode = () => (
 const JunctionNode = () => (
   <div style={{
     width: JUNC_R * 2, height: JUNC_R * 2,
-    borderRadius: '50%', background: '#3a86ff',
-    boxShadow: '0 0 10px rgba(58,134,255,0.9)',
-    border: '2px solid #3a86ff',
+    borderRadius: '50%', background: '#d9a04a',
+    boxShadow: '0 0 10px rgba(217,160,74,0.9)',
+    border: '2px solid #d9a04a',
   }}>
     <Handle type="target" position={Position.Top}    id="top"    style={{ ...cyan, top:    -4 }} />
     <Handle type="source" position={Position.Bottom} id="bottom" style={{ ...cyan, bottom: -4 }} />
@@ -350,7 +350,7 @@ function TreeLogic() {
   const onNodesChange = useCallback(changes => setNodes(nds => applyNodeChanges(changes, nds)), []);
   const onEdgesChange = useCallback(changes => setEdges(eds => applyEdgeChanges(changes, eds)), []);
   const onConnect     = useCallback(params  => setEdges(eds => addEdge(
-    { ...params, type: 'step', animated: false, style: { stroke: '#3a86ff', strokeWidth: 2 } }, eds
+    { ...params, type: 'step', animated: false, style: { stroke: '#d9a04a', strokeWidth: 2 } }, eds
   )), []);
   const onSelectionChange = useCallback(({ nodes: sel }) => setSelectedNodes(sel), []);
 
@@ -403,7 +403,7 @@ function TreeLogic() {
     if (!wrapper.current) return;
     try {
       document.querySelectorAll('.react-flow__controls,.react-flow__panel').forEach(el => el.style.visibility = 'hidden');
-      const blob = await toBlob(wrapper.current, { backgroundColor: '#0a0f1a', pixelRatio: 2 });
+      const blob = await toBlob(wrapper.current, { backgroundColor: '#0e0c09', pixelRatio: 2 });
       document.querySelectorAll('.react-flow__controls,.react-flow__panel').forEach(el => el.style.visibility = 'visible');
       if (!blob) { alert('Could not generate image.'); return; }
       const url = URL.createObjectURL(blob);
@@ -428,7 +428,7 @@ function TreeLogic() {
           elementsSelectable={true}
         >
           <Background color="#ffffff" gap={24} size={1} opacity={0.05} />
-          <Controls style={{ background: 'rgba(16,24,39,0.85)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, overflow: 'hidden' }} />
+          <Controls style={{ background: 'rgba(26,22,17,0.85)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, overflow: 'hidden' }} />
           <Panel position="top-right" style={{ display: 'flex', gap: 10, margin: 20, flexWrap: 'wrap', justifyContent: 'flex-end', alignItems: 'center' }}>
             {isLocked && !canEdit && (
               <span style={{ fontSize: '0.78rem', color: '#f59e0b', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '6px', padding: '4px 10px' }}>
@@ -441,11 +441,11 @@ function TreeLogic() {
               </button>
             )}
             {canEdit && (
-              <button className="btn-outline" onClick={handleAutoConnect} style={{ background: 'rgba(16,24,39,0.85)' }}>
+              <button className="btn-outline" onClick={handleAutoConnect} style={{ background: 'rgba(26,22,17,0.85)' }}>
                 <Shuffle size={16} /> Rebuild Tree
               </button>
             )}
-            <button className="btn-outline" onClick={handleDownload} style={{ background: 'rgba(16,24,39,0.85)' }}>
+            <button className="btn-outline" onClick={handleDownload} style={{ background: 'rgba(26,22,17,0.85)' }}>
               <Download size={16} /> Download
             </button>
             {canEdit && (

@@ -14,7 +14,7 @@ const navStyle = (isActive, color) => ({
   display: 'flex', alignItems: 'center', gap: '8px',
   padding: '10px 20px', borderRadius: '8px', textDecoration: 'none',
   color: isActive ? '#fff' : 'var(--text-muted)',
-  background: isActive ? `rgba(${color === 'cyan' ? '0,243,255' : '131,56,236'}, 0.1)` : 'transparent',
+  background: isActive ? `rgba(${color === 'cyan' ? '230,179,79' : '201,111,133'}, 0.1)` : 'transparent',
   border: isActive ? `1px solid var(--accent-${color})` : '1px solid transparent',
   transition: 'all 0.3s ease',
   boxShadow: isActive ? `var(--glow-${color})` : 'none',
@@ -286,7 +286,7 @@ export default function Layout() {
         {showInfo && (
           <motion.div
             initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-            style={{ overflow: 'hidden', background: 'rgba(10,15,26,0.97)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}
+            style={{ overflow: 'hidden', background: 'rgba(14,12,9,0.97)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}
           >
             <div className="settings-drawer-content">
 
@@ -294,7 +294,7 @@ export default function Layout() {
               <div style={{ minWidth: '240px' }}>
                 <div style={{ color: 'var(--text-muted)', fontSize: '0.78rem', marginBottom: '6px' }}>Share this ID to invite members</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <code style={{ color: 'var(--accent-cyan)', fontSize: '0.82rem', background: 'rgba(0,243,255,0.08)', padding: '4px 12px', borderRadius: '6px' }}>
+                  <code style={{ color: 'var(--accent-cyan)', fontSize: '0.82rem', background: 'rgba(230,179,79,0.08)', padding: '4px 12px', borderRadius: '6px' }}>
                     {userProfile?.familyId}
                   </code>
                   <button onClick={copyFamilyId} style={iconBtn}>
@@ -313,10 +313,10 @@ export default function Layout() {
                 {/* Tabs */}
                 <div style={{ display: 'flex', gap: '4px', background: 'rgba(0,0,0,0.25)', padding: '3px', borderRadius: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
                   {[
-                    { id: 'telegram', label: 'Telegram', icon: <Send size={12} />,       rgb: '58, 134, 255',  hex: '#3a86ff' },
+                    { id: 'telegram', label: 'Telegram', icon: <Send size={12} />,       rgb: '217, 160, 74',  hex: '#d9a04a' },
                     { id: 'ntfy',     label: 'Push',     icon: <Smartphone size={12} />, rgb: '245, 158, 11', hex: '#f59e0b' },
                     { id: 'whatsapp', label: 'WhatsApp', icon: <MessageCircle size={12} />, rgb: '37, 211, 102', hex: '#25D366' },
-                    { id: 'email',    label: 'Email',    icon: <Mail size={12} />,       rgb: '131, 56, 236', hex: '#8338ec' },
+                    { id: 'email',    label: 'Email',    icon: <Mail size={12} />,       rgb: '201, 111, 133', hex: '#c96f85' },
                   ].map(tab => (
                     <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                       style={{
@@ -337,9 +337,9 @@ export default function Layout() {
                   {activeTab === 'telegram' && (
                     <motion.div key="telegram" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} transition={{ duration: 0.15 }}>
                       <div style={{ color: 'var(--text-muted)', fontSize: '0.74rem', marginBottom: '12px', lineHeight: 1.5 }}>
-                        <strong style={{ color: '#3a86ff' }}>100% Free & Super Stable Telegram Setup:</strong><br />
-                        1. Open Telegram, search for <a href="https://t.me/BotFather" target="_blank" rel="noreferrer" style={{ color: '#00f3ff', textDecoration: 'underline' }}>@BotFather</a>. Send <code>/newbot</code> to create a bot and copy the <strong>HTTP API Bot Token</strong>.<br />
-                        2. Search for <a href="https://t.me/userinfobot" target="_blank" rel="noreferrer" style={{ color: '#00f3ff', textDecoration: 'underline' }}>@userinfobot</a>. Start the bot to find your <strong>Chat ID</strong>.<br />
+                        <strong style={{ color: '#d9a04a' }}>100% Free & Super Stable Telegram Setup:</strong><br />
+                        1. Open Telegram, search for <a href="https://t.me/BotFather" target="_blank" rel="noreferrer" style={{ color: '#e6b34f', textDecoration: 'underline' }}>@BotFather</a>. Send <code>/newbot</code> to create a bot and copy the <strong>HTTP API Bot Token</strong>.<br />
+                        2. Search for <a href="https://t.me/userinfobot" target="_blank" rel="noreferrer" style={{ color: '#e6b34f', textDecoration: 'underline' }}>@userinfobot</a>. Start the bot to find your <strong>Chat ID</strong>.<br />
                         <strong style={{ color: '#ff4444' }}>⚠️ IMPORTANT STEP 3:</strong> Search for your new bot's username on Telegram and click the <strong style={{ color: 'white' }}>\"Start\"</strong> button inside its chat window. (Bots cannot message you until you click Start!).<br />
                         4. Paste the credentials below:
                       </div>
@@ -351,7 +351,7 @@ export default function Layout() {
                           placeholder="Your Chat ID (e.g. 1308454672)"
                           style={{ padding: '6px 12px', fontSize: '0.82rem' }} />
                         <button onClick={handleTgSaveAndTest} className="btn-outline" disabled={tgStatus === 'testing'}
-                          style={{ padding: '8px 14px', fontSize: '0.82rem', borderColor: '#3a86ff', color: '#3a86ff', width: '100%', justifyContent: 'center', background: 'rgba(58, 134, 255, 0.05)' }}>
+                          style={{ padding: '8px 14px', fontSize: '0.82rem', borderColor: '#d9a04a', color: '#d9a04a', width: '100%', justifyContent: 'center', background: 'rgba(217, 160, 74, 0.05)' }}>
                           {tgStatus === 'testing' ? 'Testing...' : tgStatus === 'tested' ? <><Check size={13} color="#22c55e" /> Saved & Tested!</> : 'Save & Test Channel'}
                         </button>
                       </div>
@@ -420,7 +420,7 @@ export default function Layout() {
                   {activeTab === 'email' && (
                     <motion.div key="email" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} transition={{ duration: 0.15 }}>
                       <div style={{ color: 'var(--text-muted)', fontSize: '0.74rem', marginBottom: '12px', lineHeight: 1.5 }}>
-                        <strong style={{ color: '#8338ec' }}>Daily Email Reminders:</strong><br />
+                        <strong style={{ color: '#c96f85' }}>Daily Email Reminders:</strong><br />
                         Enter your email and opt in — every morning (8:00 AM IST) BirthTree checks your
                         family's events and emails you from <code>rojitenterprise@gmail.com</code> when
                         an occasion is <strong>today or tomorrow</strong>.
@@ -432,11 +432,11 @@ export default function Layout() {
                           style={{ padding: '6px 12px', fontSize: '0.82rem' }} />
                         <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: 'var(--text-main)', cursor: 'pointer' }}>
                           <input type="checkbox" checked={emailOptIn} onChange={e => setEmailOptIn(e.target.checked)}
-                            style={{ width: 'auto', accentColor: '#8338ec', cursor: 'pointer' }} />
+                            style={{ width: 'auto', accentColor: '#c96f85', cursor: 'pointer' }} />
                           I opt in to receive event reminder emails
                         </label>
                         <button onClick={handleEmailSave} className="btn-outline" disabled={emailStatus === 'testing'}
-                          style={{ padding: '8px 14px', fontSize: '0.82rem', borderColor: '#8338ec', color: '#a06cf0', width: '100%', justifyContent: 'center', background: 'rgba(131, 56, 236, 0.05)' }}>
+                          style={{ padding: '8px 14px', fontSize: '0.82rem', borderColor: '#c96f85', color: '#d98ba0', width: '100%', justifyContent: 'center', background: 'rgba(201, 111, 133, 0.05)' }}>
                           {emailStatus === 'testing' ? 'Saving...' : emailStatus === 'tested' ? <><Check size={13} color="#22c55e" /> Saved!</> : 'Save Email Preferences'}
                         </button>
                       </div>
@@ -467,7 +467,7 @@ export default function Layout() {
             style={{
               position: 'fixed', top: '88px', right: '16px', zIndex: 200,
               width: '480px', maxHeight: '60vh', overflowY: 'auto',
-              background: 'rgba(10,15,26,0.97)', border: '1px solid rgba(255,255,255,0.1)',
+              background: 'rgba(14,12,9,0.97)', border: '1px solid rgba(255,255,255,0.1)',
               borderRadius: '16px', boxShadow: '0 24px 64px rgba(0,0,0,0.7)',
             }}
           >

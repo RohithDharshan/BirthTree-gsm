@@ -71,7 +71,7 @@ export default function FamilySetup() {
               style={{
                 flex: 1, padding: '10px', border: 'none', borderRadius: '8px', cursor: 'pointer',
                 fontWeight: 600, fontSize: '0.9rem', transition: 'all 0.2s',
-                background: tab === t ? 'linear-gradient(135deg,rgba(0,243,255,0.2),rgba(131,56,236,0.2))' : 'transparent',
+                background: tab === t ? 'linear-gradient(135deg,rgba(230,179,79,0.2),rgba(201,111,133,0.2))' : 'transparent',
                 color: tab === t ? 'white' : 'var(--text-muted)',
                 borderBottom: tab === t ? '2px solid var(--accent-cyan)' : '2px solid transparent',
               }}>
