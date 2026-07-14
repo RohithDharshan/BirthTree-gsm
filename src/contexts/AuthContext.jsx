@@ -47,9 +47,11 @@ export function AuthProvider({ children }) {
   const isAdmin  = !!currentUser && familyData?.createdBy === currentUser.uid;
   const isLocked = familyData?.locked === true;
   const canEdit  = isAdmin || !isLocked;
+  // Site-wide super admin (sees /admin dashboard: all users, usage, analytics)
+  const isSuperAdmin = ['rojitadmin'].includes((userProfile?.username || '').toLowerCase());
 
   return (
-    <AuthContext.Provider value={{ currentUser, userProfile, familyData, isAdmin, isLocked, canEdit, loading, refreshProfile }}>
+    <AuthContext.Provider value={{ currentUser, userProfile, familyData, isAdmin, isLocked, canEdit, isSuperAdmin, loading, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

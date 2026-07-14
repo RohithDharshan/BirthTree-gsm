@@ -2,13 +2,12 @@
 // 1. Browser notifications  — OS popup when app is open
 // 2. Telegram Bot API       — 100% free, highly stable message delivery to your Telegram chat
 // 3. ntfy.sh Push           — 100% free, instant native mobile push notifications, zero signups
-// 4. WhatsApp (CallMeBot)   — free personal WhatsApp messages via api.callmebot.com
-// 5. Email (ntfy gateway)   — free email delivery through ntfy.sh's Email header
+
+// 4. Email — sent server-side by /api/send-reminders from Gmail (daily cron)
 
 const STORAGE_KEY    = 'bt_notified_date';
 const TG_SENT_KEY    = 'bt_tg_sent_date';
 const NTFY_SENT_KEY  = 'bt_ntfy_sent_date';
-const WA_SENT_KEY    = 'bt_wa_sent_date';
 
 const daysUntil = (event) => {
   const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -69,16 +68,6 @@ export const sendNtfyNotification = async (text, topic, events = []) => {
   }
 };
 
-// Send WhatsApp message via CallMeBot (free personal API)
-// Setup: user adds +34 644 66 32 62 to contacts, sends "I allow callmebot to send me messages"
-// on WhatsApp, and receives their personal apikey back.
-export const sendWhatsAppNotification = async (text, phone, apikey) => {
-  const url = `https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(text)}&apikey=${encodeURIComponent(apikey)}`;
-  // CallMeBot has no CORS headers — fire-and-forget with no-cors.
-  // We can't read the response, but delivery works if credentials are valid.
-  await fetch(url, { method: 'GET', mode: 'no-cors' });
-};
-
 // ─── Test Senders ──────────────────────────────────────────────────────────
 
 export const testTelegramNotification = async (botToken, chatId) => {
@@ -90,11 +79,6 @@ export const testNtfyNotification = async (topic) => {
   const text = `🌳 BirthTree Connected!\n\nThis is a test notification confirming your ntfy.sh push notifications are set up correctly. 🎉`;
   const mockEvent = [{ type: 'birthday' }];
   return sendNtfyNotification(text, topic, mockEvent);
-};
-
-export const testWhatsAppNotification = async (phone, apikey) => {
-  const text = `🌳 BirthTree Connected! This is a test message confirming your WhatsApp reminders are set up correctly. 🎉`;
-  return sendWhatsAppNotification(text, phone, apikey);
 };
 
 // ─── Core Reminder Runner ───────────────────────────────────────────────────
@@ -139,27 +123,6 @@ export const sendExternalReminders = async (events, userProfile) => {
         console.log('ntfy.sh reminder sent successfully');
       } catch (err) {
         console.warn('ntfy.sh reminder failed:', err);
-      }
-    }
-  }
-
-  // Plain-text message shared by WhatsApp + Email channels
-  const plainLines = soon.map(evt => {
-    const when = daysUntil(evt) === 0 ? 'TODAY 🎉' : 'TOMORROW';
-    const typeEmoji = evt.type === 'birthday' ? '🎂' : '💍';
-    return `${typeEmoji} ${evt.name}'s ${evt.type} is ${when}`;
-  });
-  const plainText = `🌳 BirthTree Reminder\n${plainLines.join('\n')}`;
-
-  // 3. WhatsApp via CallMeBot
-  if (userProfile?.phone && userProfile?.callmebotKey) {
-    if (localStorage.getItem(WA_SENT_KEY) !== today) {
-      try {
-        await sendWhatsAppNotification(plainText, userProfile.phone, userProfile.callmebotKey);
-        localStorage.setItem(WA_SENT_KEY, today);
-        console.log('WhatsApp reminder sent');
-      } catch (err) {
-        console.warn('WhatsApp reminder failed:', err);
       }
     }
   }

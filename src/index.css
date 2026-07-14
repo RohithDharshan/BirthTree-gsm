@@ -590,3 +590,5 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     max-height: 50vh !important;
   }
 }
+
+@keyframes spin { to { transform: rotate(360deg); } }
