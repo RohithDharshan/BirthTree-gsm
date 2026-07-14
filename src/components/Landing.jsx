@@ -1,14 +1,13 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  motion, useScroll, useTransform, useSpring, useReducedMotion,
-} from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Bell, Send, Smartphone, Mail, ArrowRight, ChevronDown } from 'lucide-react';
 
 const GOLD = '#e6b34f';
 const ROSE = '#c96f85';
 
 const spring = { type: 'spring', stiffness: 80, damping: 18 };
+const clamp01 = v => Math.min(1, Math.max(0, v));
 
 /* ── Mini month card: the product's calendar, miniature and alive ────────── */
 function MiniMonth() {
@@ -93,34 +92,90 @@ function TreeScene() {
   );
 }
 
+/* ── Hero copy + CTAs (shared between animated and reduced-motion modes) ── */
+function HeroContent() {
+  return (
+    <>
+      <h1 style={{
+        fontSize: 'clamp(2.6rem, 7vw, 5.4rem)', fontWeight: 600, lineHeight: 1.08,
+        color: 'var(--text-main)', maxWidth: '14ch',
+      }}>
+        Every birthday, <span style={{ color: GOLD, fontStyle: 'italic' }}>remembered</span>.
+      </h1>
+      <p style={{
+        marginTop: 22, fontSize: 'clamp(1rem, 1.6vw, 1.2rem)', color: '#c9c0b2',
+        maxWidth: '46ch', lineHeight: 1.7,
+      }}>
+        One shared calendar for the whole family. Faces on the dates,
+        a tree of everyone, and reminders that arrive before the day, not after.
+      </p>
+      <div style={{ marginTop: 36, display: 'flex', gap: 14, flexWrap: 'wrap', justifyContent: 'center' }}>
+        <Link to="/auth?mode=register" className="btn-primary" style={{ textDecoration: 'none', padding: '14px 30px', fontSize: '1rem' }}>
+          Create your family <ArrowRight size={18} />
+        </Link>
+        <Link to="/auth" className="btn-outline" style={{ textDecoration: 'none', padding: '14px 30px', fontSize: '1rem' }}>
+          Sign in
+        </Link>
+      </div>
+    </>
+  );
+}
+
 /* ── Landing page ─────────────────────────────────────────────────────────── */
 export default function Landing() {
   const reduceMotion = useReducedMotion();
   const introRef = useRef(null);
   const calRef = useRef(null);
 
-  // Intro: scroll flies the camera through the logo
-  const { scrollYProgress: introP } = useScroll({
-    target: introRef, offset: ['start start', 'end start'],
-  });
-  // Choreography: first the name fades away slowly (0 → 0.28) while the
-  // logo holds still, then the logo zooms to full screen (0.28 → 0.78),
-  // and the hero rises as it passes.
-  const rawScale = useTransform(introP, [0, 0.28, 0.78], [1, 1.06, 15]);
-  const logoScale = useSpring(rawScale, { stiffness: 120, damping: 24, mass: 0.4 });
-  const logoOpacity = useTransform(introP, [0.55, 0.76], [1, 0]);
-  const wordOpacity = useTransform(introP, [0.02, 0.28], [1, 0]);
-  const wordY = useTransform(introP, [0.02, 0.28], [0, 26]);
-  const hintOpacity = useTransform(introP, [0, 0.1], [1, 0]);
-  const heroOpacity = useTransform(introP, [0.6, 0.85], [0, 1]);
-  const heroY = useTransform(introP, [0.6, 0.9], [70, 0]);
+  // Scroll choreography without framer's useScroll (which fails silently in
+  // some production environments). A plain scroll listener drives CSS custom
+  // properties; elements read them directly, so the sequence always runs:
+  //   1) name fades away slowly  2) logo zooms to full screen  3) hero rises.
+  useEffect(() => {
+    if (reduceMotion) return;
+    const intro = introRef.current;
+    const cal = calRef.current;
+    let raf = 0;
 
-  // Calendar scene: gentle 3D parallax as it crosses the viewport
-  const { scrollYProgress: calP } = useScroll({
-    target: calRef, offset: ['start end', 'end start'],
-  });
-  const calRotateX = useTransform(calP, [0, 1], [22, -8]);
-  const calY = useTransform(calP, [0, 1], [40, -40]);
+    const update = () => {
+      raf = 0;
+      if (intro) {
+        const total = Math.max(1, intro.offsetHeight - window.innerHeight);
+        const p = clamp01((window.scrollY - intro.offsetTop) / total);
+
+        const word = 1 - clamp01((p - 0.02) / 0.24);            // gone by 0.26
+        const zoom = clamp01((p - 0.3) / 0.45);                 // grows 0.30 → 0.75
+        const scale = 1 + Math.pow(zoom, 1.5) * 13;
+        const logoFade = 1 - clamp01((p - 0.58) / 0.17);        // dissolves at full zoom
+        const hero = clamp01((p - 0.62) / 0.24);                // rises last
+
+        intro.style.setProperty('--word-o', word.toFixed(3));
+        intro.style.setProperty('--word-y', `${((1 - word) * 26).toFixed(1)}px`);
+        intro.style.setProperty('--logo-s', scale.toFixed(3));
+        intro.style.setProperty('--logo-o', logoFade.toFixed(3));
+        intro.style.setProperty('--hint-o', (1 - clamp01(p / 0.08)).toFixed(3));
+        intro.style.setProperty('--hero-o', hero.toFixed(3));
+        intro.style.setProperty('--hero-y', `${((1 - hero) * 60).toFixed(1)}px`);
+        intro.style.setProperty('--hero-pe', hero > 0.5 ? 'auto' : 'none');
+      }
+      if (cal) {
+        const r = cal.getBoundingClientRect();
+        const cp = clamp01((window.innerHeight - r.top) / (window.innerHeight + r.height));
+        cal.style.setProperty('--cal-rx', `${(22 - cp * 30).toFixed(2)}deg`);
+        cal.style.setProperty('--cal-y', `${(40 - cp * 80).toFixed(1)}px`);
+      }
+    };
+
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [reduceMotion]);
 
   const sectionPad = 'clamp(88px, 14vh, 160px) 24px';
 
@@ -151,28 +206,30 @@ export default function Landing() {
       </header>
 
       {/* ── Act 1: the logo, then straight through it ── */}
-      <div ref={introRef} style={{ height: reduceMotion ? '100vh' : '240vh', position: 'relative' }}>
+      <div ref={introRef} style={{ height: reduceMotion ? 'auto' : '260vh', position: 'relative' }}>
         <div style={{
-          position: 'sticky', top: 0, height: '100dvh', display: 'flex',
+          position: reduceMotion ? 'relative' : 'sticky', top: 0,
+          height: '100dvh', display: 'flex',
           flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
           overflow: 'hidden',
         }}>
-          <motion.div style={reduceMotion ? {} : { scale: logoScale, opacity: logoOpacity }}>
-            <img src="/kinbloom-mark.png" alt="KinBloom emblem" style={{
-              width: 'clamp(150px, 22vw, 220px)', height: 'clamp(150px, 22vw, 220px)',
-              borderRadius: '50%', display: 'block',
-              boxShadow: '0 0 70px rgba(230,179,79,0.4), 0 24px 80px rgba(0,0,0,0.5)',
-            }} />
-          </motion.div>
+          <img src="/kinbloom-mark.png" alt="KinBloom emblem" style={{
+            width: 'clamp(150px, 22vw, 220px)', height: 'clamp(150px, 22vw, 220px)',
+            borderRadius: '50%', display: 'block',
+            boxShadow: '0 0 70px rgba(230,179,79,0.4), 0 24px 80px rgba(0,0,0,0.5)',
+            transform: reduceMotion ? 'none' : 'scale(var(--logo-s, 1))',
+            opacity: reduceMotion ? 1 : 'var(--logo-o, 1)',
+            willChange: 'transform, opacity',
+          }} />
 
-          <motion.p
-            style={{
-              ...(reduceMotion ? {} : { opacity: wordOpacity, y: wordY }),
-              marginTop: 28, fontFamily: 'var(--font-display)',
-              fontSize: 'clamp(1.9rem, 4.5vw, 3.2rem)', color: 'var(--text-main)', fontWeight: 500,
-              textAlign: 'center',
-            }}
-          >
+          <p style={{
+            marginTop: 28, fontFamily: 'var(--font-display)',
+            fontSize: 'clamp(1.9rem, 4.5vw, 3.2rem)', color: 'var(--text-main)', fontWeight: 500,
+            textAlign: 'center',
+            opacity: reduceMotion ? 1 : 'var(--word-o, 1)',
+            transform: reduceMotion ? 'none' : 'translateY(var(--word-y, 0px))',
+            willChange: 'opacity, transform',
+          }}>
             Kin<span style={{ color: GOLD }}>Bloom</span>
             <span style={{
               display: 'block', fontFamily: 'Outfit, sans-serif', fontWeight: 400,
@@ -180,53 +237,48 @@ export default function Landing() {
             }}>
               Celebrate every moment. Preserve every generation.
             </span>
-          </motion.p>
+          </p>
 
           {!reduceMotion && (
-            <motion.div style={{ opacity: hintOpacity }} aria-hidden>
-              <motion.div
-                animate={{ y: [0, 8, 0] }}
-                transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-                style={{ position: 'absolute', bottom: 36, left: '50%', translateX: '-50%', color: 'var(--text-muted)' }}
-              >
-                <ChevronDown size={26} />
-              </motion.div>
+            <motion.div
+              animate={{ y: [0, 8, 0] }}
+              transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+              aria-hidden
+              style={{
+                position: 'absolute', bottom: 36, left: '50%', marginLeft: -13,
+                color: 'var(--text-muted)', opacity: 'var(--hint-o, 1)',
+              }}
+            >
+              <ChevronDown size={26} />
             </motion.div>
           )}
 
-          {/* Hero rises as the logo passes by */}
-          <motion.div
-            style={{
-              ...(reduceMotion ? {} : { opacity: heroOpacity, y: heroY }),
+          {/* Hero rises after the logo passes by (animated mode only) */}
+          {!reduceMotion && (
+            <div style={{
               position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
               alignItems: 'center', justifyContent: 'center', textAlign: 'center',
-              padding: '0 24px', pointerEvents: 'none',
-            }}
-          >
-            <h1 style={{
-              fontSize: 'clamp(2.6rem, 7vw, 5.4rem)', fontWeight: 600, lineHeight: 1.08,
-              color: 'var(--text-main)', maxWidth: '14ch',
+              padding: '0 24px',
+              opacity: 'var(--hero-o, 0)',
+              transform: 'translateY(var(--hero-y, 60px))',
+              pointerEvents: 'var(--hero-pe, none)',
+              willChange: 'opacity, transform',
             }}>
-              Every birthday, <span style={{ color: GOLD, fontStyle: 'italic' }}>remembered</span>.
-            </h1>
-            <p style={{
-              marginTop: 22, fontSize: 'clamp(1rem, 1.6vw, 1.2rem)', color: '#c9c0b2',
-              maxWidth: '46ch', lineHeight: 1.7,
-            }}>
-              One shared calendar for the whole family. Faces on the dates,
-              a tree of everyone, and reminders that arrive before the day, not after.
-            </p>
-            <div style={{ marginTop: 36, display: 'flex', gap: 14, flexWrap: 'wrap', justifyContent: 'center', pointerEvents: 'auto' }}>
-              <Link to="/auth?mode=register" className="btn-primary" style={{ textDecoration: 'none', padding: '14px 30px', fontSize: '1rem' }}>
-                Create your family <ArrowRight size={18} />
-              </Link>
-              <Link to="/auth" className="btn-outline" style={{ textDecoration: 'none', padding: '14px 30px', fontSize: '1rem' }}>
-                Sign in
-              </Link>
+              <HeroContent />
             </div>
-          </motion.div>
+          )}
         </div>
       </div>
+
+      {/* Static hero for reduced-motion visitors */}
+      {reduceMotion && (
+        <section style={{
+          padding: sectionPad, display: 'flex', flexDirection: 'column',
+          alignItems: 'center', textAlign: 'center',
+        }}>
+          <HeroContent />
+        </section>
+      )}
 
       {/* ── Act 2: the calendar, floating in 3D ── */}
       <section ref={calRef} style={{
@@ -252,9 +304,12 @@ export default function Landing() {
           </motion.p>
         </div>
         <div style={{ perspective: 1000 }}>
-          <motion.div style={reduceMotion ? {} : { rotateX: calRotateX, y: calY, transformStyle: 'preserve-3d' }}>
+          <div style={{
+            transform: reduceMotion ? 'none' : 'translateY(var(--cal-y, 0px)) rotateX(var(--cal-rx, 0deg))',
+            transformStyle: 'preserve-3d', willChange: 'transform',
+          }}>
             <MiniMonth />
-          </motion.div>
+          </div>
         </div>
       </section>
 
