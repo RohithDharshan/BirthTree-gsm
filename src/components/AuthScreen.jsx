@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { Link, useSearchParams } from 'react-router-dom';
 import { registerUser, loginUser } from '../firebase/auth';
-import { User, Lock, LogIn, UserPlus } from 'lucide-react';
+import { User, Lock, LogIn, UserPlus, ArrowLeft } from 'lucide-react';
 
 export default function AuthScreen() {
-  const [tab,      setTab]      = useState('login');
+  const [searchParams] = useSearchParams();
+  const [tab,      setTab]      = useState(searchParams.get('mode') === 'register' ? 'register' : 'login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error,    setError]    = useState('');
@@ -33,8 +35,14 @@ export default function AuthScreen() {
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         className="glass-panel"
-        style={{ width: '100%', maxWidth: '420px', padding: '40px' }}
+        style={{ width: '100%', maxWidth: '420px', padding: '40px', position: 'relative' }}
       >
+        <Link to="/" aria-label="Back to home" style={{
+          position: 'absolute', top: 18, left: 18, color: 'var(--text-muted)',
+          display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none', fontSize: '0.82rem',
+        }}>
+          <ArrowLeft size={15} /> Home
+        </Link>
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <div style={{
             background: 'linear-gradient(135deg, var(--accent-cyan), var(--accent-violet))',

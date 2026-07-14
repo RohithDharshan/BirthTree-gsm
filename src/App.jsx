@@ -6,6 +6,7 @@ import CalendarView from './components/Calendar';
 import FamilyTreeView from './components/FamilyTree';
 import AuthScreen from './components/AuthScreen';
 import FamilySetup from './components/FamilySetup';
+import Landing from './components/Landing';
 import AdminPanel from './components/AdminPanel';
 
 function AppRoutes() {
@@ -19,7 +20,14 @@ function AppRoutes() {
     );
   }
 
-  if (!currentUser) return <AuthScreen />;
+  if (!currentUser) {
+    return (
+      <Routes>
+        <Route path="/auth" element={<AuthScreen />} />
+        <Route path="*" element={<Landing />} />
+      </Routes>
+    );
+  }
   if (!userProfile?.familyId && !isSuperAdmin) return <FamilySetup />;
 
   return (
@@ -31,6 +39,7 @@ function AppRoutes() {
         <Route path="tree" element={<FamilyTreeView />} />
         <Route path="admin" element={<AdminPanel />} />
       </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
