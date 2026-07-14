@@ -72,16 +72,16 @@ function TreeScene() {
   return (
     <svg viewBox="0 0 560 400" style={{ width: 'min(560px, 92vw)', height: 'auto', overflow: 'visible' }} role="img"
       aria-label="A family tree: Amma and Appa joined by a heart, with two children linked below">
-      {line('M 175 110 L 245 110', ROSE, 0.5)}
-      {line('M 315 110 L 385 110', ROSE, 0.5)}
-      {line('M 140 150 L 140 200 L 280 200 L 420 200 L 420 150', GOLD, 0.8)}
-      {line('M 280 200 L 280 250', GOLD, 1.2)}
-      {line('M 180 250 L 180 290', GOLD, 1.5)}
-      {line('M 380 250 L 380 290', GOLD, 1.5)}
-      {line('M 180 250 L 380 250', GOLD, 1.35)}
+      {line('M 176 110 L 252 110', ROSE, 0.5)}
+      {line('M 308 110 L 384 110', ROSE, 0.5)}
+      {/* single drop from the heart, so no line crosses the parents' names */}
+      {line('M 280 128 L 280 250', GOLD, 0.9)}
+      {line('M 180 250 L 380 250', GOLD, 1.2)}
+      {line('M 180 250 L 180 288', GOLD, 1.45)}
+      {line('M 380 250 L 380 288', GOLD, 1.45)}
       {node(140, 110, 'A', 'Appa', GOLD, 0.1)}
       {node(420, 110, 'A', 'Amma', GOLD, 0.25)}
-      <motion.text x="280" y="120" textAnchor="middle" fontSize="26"
+      <motion.text x="280" y="120" textAnchor="middle" fontSize="26" fill={ROSE}
         initial={{ opacity: 0, scale: 0 }} whileInView={{ opacity: 1, scale: 1 }}
         viewport={{ once: true }} transition={{ ...spring, delay: 0.7 }}
         style={{ transformOrigin: '280px 112px', filter: 'drop-shadow(0 0 8px rgba(201,111,133,0.8))' }}>
@@ -103,13 +103,17 @@ export default function Landing() {
   const { scrollYProgress: introP } = useScroll({
     target: introRef, offset: ['start start', 'end start'],
   });
-  const rawScale = useTransform(introP, [0, 0.6], [1, 14]);
+  // Choreography: first the name fades away slowly (0 → 0.28) while the
+  // logo holds still, then the logo zooms to full screen (0.28 → 0.78),
+  // and the hero rises as it passes.
+  const rawScale = useTransform(introP, [0, 0.28, 0.78], [1, 1.06, 15]);
   const logoScale = useSpring(rawScale, { stiffness: 120, damping: 24, mass: 0.4 });
-  const logoOpacity = useTransform(introP, [0.32, 0.55], [1, 0]);
-  const wordOpacity = useTransform(introP, [0, 0.18], [1, 0]);
-  const hintOpacity = useTransform(introP, [0, 0.12], [1, 0]);
-  const heroOpacity = useTransform(introP, [0.45, 0.72], [0, 1]);
-  const heroY = useTransform(introP, [0.45, 0.8], [70, 0]);
+  const logoOpacity = useTransform(introP, [0.55, 0.76], [1, 0]);
+  const wordOpacity = useTransform(introP, [0.02, 0.28], [1, 0]);
+  const wordY = useTransform(introP, [0.02, 0.28], [0, 26]);
+  const hintOpacity = useTransform(introP, [0, 0.1], [1, 0]);
+  const heroOpacity = useTransform(introP, [0.6, 0.85], [0, 1]);
+  const heroY = useTransform(introP, [0.6, 0.9], [70, 0]);
 
   // Calendar scene: gentle 3D parallax as it crosses the viewport
   const { scrollYProgress: calP } = useScroll({
@@ -135,7 +139,7 @@ export default function Landing() {
           backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
         }}>
           <img src="/kinbloom-mark.png" alt="" style={{ width: 30, height: 30, borderRadius: '50%' }} />
-          Kin<span style={{ color: GOLD, marginLeft: -8 }}>Bloom</span>
+          <span>Kin<span style={{ color: GOLD }}>Bloom</span></span>
         </span>
         <Link to="/auth" style={{
           color: GOLD, textDecoration: 'none', fontWeight: 600, fontSize: '0.9rem',
@@ -163,7 +167,7 @@ export default function Landing() {
 
           <motion.p
             style={{
-              ...(reduceMotion ? {} : { opacity: wordOpacity }),
+              ...(reduceMotion ? {} : { opacity: wordOpacity, y: wordY }),
               marginTop: 28, fontFamily: 'var(--font-display)',
               fontSize: 'clamp(1.9rem, 4.5vw, 3.2rem)', color: 'var(--text-main)', fontWeight: 500,
               textAlign: 'center',
