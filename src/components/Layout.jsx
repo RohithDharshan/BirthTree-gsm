@@ -170,14 +170,12 @@ export default function Layout() {
       <nav className="main-nav">
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
           style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{
-            background: 'linear-gradient(135deg,var(--accent-cyan),var(--accent-violet))',
-            width: '40px', height: '40px', borderRadius: '12px',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'white', fontWeight: 'bold', fontSize: '1.2rem', boxShadow: 'var(--glow-cyan)',
-          }}>BT</div>
-          <span className="text-gradient" style={{ fontSize: '1.5rem', fontWeight: 700, letterSpacing: '1px' }}>
-            BirthTree
+          <img src="/kinbloom-mark.png" alt="" style={{
+            width: '42px', height: '42px', borderRadius: '50%',
+            boxShadow: '0 0 16px rgba(230,179,79,0.25)',
+          }} />
+          <span style={{ fontSize: '1.45rem', fontWeight: 600, fontFamily: 'var(--font-display)', color: 'var(--text-main)' }}>
+            Kin<span style={{ color: 'var(--accent-cyan)' }}>Bloom</span>
           </span>
           {/* Lock badge */}
           {isLocked && (
@@ -344,12 +342,12 @@ export default function Layout() {
                       <div style={{ color: 'var(--text-muted)', fontSize: '0.74rem', marginBottom: '12px', lineHeight: 1.5 }}>
                         <strong style={{ color: '#f59e0b' }}>Free Mobile Push Alerts (Zero Accounts/Setup):</strong><br />
                         1. Install the <strong>ntfy</strong> app on your iOS/Android phone (completely free, open-source).<br />
-                        2. Click "Subscribe to topic" and choose a completely unique, secret name (e.g., <code>birthtree-alerts-yourname</code>).<br />
+                        2. Click "Subscribe to topic" and choose a completely unique, secret name (e.g., <code>kinbloom-alerts-yourname</code>).<br />
                         3. Enter that exact topic name below to receive native push notifications instantly:
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <input type="text" value={ntfyTopic} onChange={e => setNtfyTopic(e.target.value)}
-                          placeholder="Unique Topic Name (e.g. birthtree-alerts-john)"
+                          placeholder="Unique Topic Name (e.g. kinbloom-alerts-john)"
                           style={{ padding: '6px 12px', fontSize: '0.82rem' }} />
                         <button onClick={handleNtfySaveAndTest} className="btn-outline" disabled={ntfyStatus === 'testing'}
                           style={{ padding: '8px 14px', fontSize: '0.82rem', borderColor: '#f59e0b', color: '#f59e0b', width: '100%', justifyContent: 'center', background: 'rgba(245, 158, 11, 0.05)' }}>
@@ -368,7 +366,7 @@ export default function Layout() {
                     <motion.div key="email" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} transition={{ duration: 0.15 }}>
                       <div style={{ color: 'var(--text-muted)', fontSize: '0.74rem', marginBottom: '12px', lineHeight: 1.5 }}>
                         <strong style={{ color: '#c96f85' }}>Daily Email Reminders:</strong><br />
-                        Enter your email and opt in — every morning (8:00 AM IST) BirthTree checks your
+                        Enter your email and opt in — every morning (8:00 AM IST) KinBloom checks your
                         family's events and emails you from <code>rojitenterprise@gmail.com</code> when
                         an occasion is <strong>today or tomorrow</strong>.
                         <em> Check spam on the first email and mark it "Not spam".</em>

@@ -72,22 +72,22 @@ export default async function handler(req, res) {
 
     const html = `
       <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;
-                  background:#0a0f1a;color:#f4f7fb;border-radius:16px">
-        <h2 style="margin:0 0 4px;background:linear-gradient(90deg,#22e4f5,#9257f0);
-                   -webkit-background-clip:text;color:#22e4f5">🌳 BirthTree Reminder</h2>
+                  background:#0e0c09;color:#f4f7fb;border-radius:16px">
+        <h2 style="margin:0 0 4px;background:linear-gradient(90deg,#e6b34f,#9257f0);
+                   -webkit-background-clip:text;color:#e6b34f">🌸 KinBloom Reminder</h2>
         <p style="color:#9aa5b5;margin:0 0 16px">Upcoming special occasions in your family</p>
         ${lines.map(l => `<p style="font-size:16px;margin:8px 0;padding:10px 14px;
           background:rgba(255,255,255,0.06);border-radius:10px">${l}</p>`).join('')}
         <p style="color:#9aa5b5;font-size:12px;margin-top:20px">
-          Sent by BirthTree · you opted in to email reminders.
+          Sent by KinBloom · you opted in to email reminders.
         </p>
       </div>`;
 
     try {
       await transporter.sendMail({
-        from: `"BirthTree" <${process.env.GMAIL_USER}>`,
+        from: `"KinBloom" <${process.env.GMAIL_USER}>`,
         bcc: emails,
-        subject: `🌳 BirthTree: ${soon.length} occasion${soon.length > 1 ? 's' : ''} coming up!`,
+        subject: `🌸 KinBloom: ${soon.length} occasion${soon.length > 1 ? 's' : ''} coming up!`,
         text: lines.join('\n'),
         html,
       });

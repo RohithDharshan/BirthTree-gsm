@@ -53,7 +53,7 @@ export const sendNtfyNotification = async (text, topic, events = []) => {
   if (tags.length === 0) tags.push('calendar');
 
   const headers = {
-    'Title': 'BirthTree Reminder',
+    'Title': 'KinBloom Reminder',
     'Priority': 'high',
     'Tags': tags.join(',')
   };
@@ -71,12 +71,12 @@ export const sendNtfyNotification = async (text, topic, events = []) => {
 // ─── Test Senders ──────────────────────────────────────────────────────────
 
 export const testTelegramNotification = async (botToken, chatId) => {
-  const text = `🌳 <b>BirthTree Connected!</b>\n\nThis is a test notification confirming your Telegram Bot reminders are set up correctly. 🎉`;
+  const text = `🌳 <b>KinBloom Connected!</b>\n\nThis is a test notification confirming your Telegram Bot reminders are set up correctly. 🎉`;
   return sendTelegramNotification(text, botToken, chatId);
 };
 
 export const testNtfyNotification = async (topic) => {
-  const text = `🌳 BirthTree Connected!\n\nThis is a test notification confirming your ntfy.sh push notifications are set up correctly. 🎉`;
+  const text = `🌳 KinBloom Connected!\n\nThis is a test notification confirming your ntfy.sh push notifications are set up correctly. 🎉`;
   const mockEvent = [{ type: 'birthday' }];
   return sendNtfyNotification(text, topic, mockEvent);
 };
@@ -97,7 +97,7 @@ export const sendExternalReminders = async (events, userProfile) => {
         const typeEmoji = evt.type === 'birthday' ? '🎂' : '💍';
         return `${typeEmoji} <b>${evt.name}</b>'s ${evt.type} is ${when}`;
       });
-      const text = `🌳 <b>BirthTree Reminder</b>\n${lines.join('\n')}`;
+      const text = `🌳 <b>KinBloom Reminder</b>\n${lines.join('\n')}`;
       try {
         await sendTelegramNotification(text, userProfile.telegramBotToken, userProfile.telegramChatId);
         localStorage.setItem(TG_SENT_KEY, today);
@@ -116,7 +116,7 @@ export const sendExternalReminders = async (events, userProfile) => {
         const typeEmoji = evt.type === 'birthday' ? '🎂' : '💍';
         return `${typeEmoji} ${evt.name}'s ${evt.type} is ${when}`;
       });
-      const text = `🌳 BirthTree Reminder\n${lines.join('\n')}`;
+      const text = `🌳 KinBloom Reminder\n${lines.join('\n')}`;
       try {
         await sendNtfyNotification(text, userProfile.ntfyTopic, soon);
         localStorage.setItem(NTFY_SENT_KEY, today);
@@ -149,7 +149,7 @@ export const checkAndNotify = (events) => {
     const diff  = daysUntil(evt);
     const when  = diff === 0 ? 'is TODAY 🎉' : 'is TOMORROW';
     const emoji = evt.type === 'birthday' ? '🎂' : '💍';
-    new Notification(`${emoji} BirthTree Reminder`, {
+    new Notification(`${emoji} KinBloom Reminder`, {
       body: `${evt.name}'s ${evt.type} ${when}`,
       icon: '/favicon.ico',
       tag:  `bt-${evt.id}`,    // prevents duplicate toasts for same event

@@ -407,7 +407,7 @@ function TreeLogic() {
       document.querySelectorAll('.react-flow__controls,.react-flow__panel').forEach(el => el.style.visibility = 'visible');
       if (!blob) { alert('Could not generate image.'); return; }
       const url = URL.createObjectURL(blob);
-      Object.assign(document.createElement('a'), { href: url, download: `birthtree-family-${Date.now()}.png` })
+      Object.assign(document.createElement('a'), { href: url, download: `kinbloom-family-${Date.now()}.png` })
         .click();
       setTimeout(() => URL.revokeObjectURL(url), 200);
     } catch (err) { alert('Download error: ' + err.message); }

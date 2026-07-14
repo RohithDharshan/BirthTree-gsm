@@ -18,7 +18,7 @@ export default function BackupRestore() {
       const url  = URL.createObjectURL(blob);
       Object.assign(document.createElement('a'), {
         href: url,
-        download: `birthtree-backup-${new Date().toISOString().split('T')[0]}.json`,
+        download: `kinbloom-backup-${new Date().toISOString().split('T')[0]}.json`,
       }).click();
       URL.revokeObjectURL(url);
       setExportDone(true);
@@ -37,7 +37,7 @@ export default function BackupRestore() {
 
     let backup;
     try { backup = JSON.parse(await file.text()); }
-    catch { alert('Could not read file — make sure it is a BirthTree .json backup.'); return; }
+    catch { alert('Could not read file — make sure it is a KinBloom .json backup.'); return; }
 
     if (!backup.version || !backup.events || !backup.tree) {
       alert('Invalid backup file.'); return;

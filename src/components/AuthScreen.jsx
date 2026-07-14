@@ -44,15 +44,20 @@ export default function AuthScreen() {
           <ArrowLeft size={15} /> Home
         </Link>
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div style={{
-            background: 'linear-gradient(135deg, var(--accent-cyan), var(--accent-violet))',
-            width: '56px', height: '56px', borderRadius: '16px',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'white', fontWeight: 'bold', fontSize: '1.5rem',
-            margin: '0 auto 16px', boxShadow: 'var(--glow-cyan)',
-          }}>BT</div>
-          <h1 className="text-gradient" style={{ fontSize: '2rem', fontWeight: 700 }}>BirthTree</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Family calendar & tree builder</p>
+          <img src="/kinbloom-mark.png" alt="KinBloom" style={{
+            width: '64px', height: '64px', borderRadius: '50%',
+            margin: '0 auto 16px', display: 'block',
+            boxShadow: '0 0 24px rgba(230,179,79,0.3)',
+          }} />
+          <h1 style={{ fontSize: '2rem', fontWeight: 600, color: 'var(--text-main)' }}>
+            Kin<span style={{ color: 'var(--accent-cyan)' }}>Bloom</span>
+          </h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: 6 }}>
+            Celebrate every moment. Preserve every generation.
+          </p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', letterSpacing: '0.12em', marginTop: 8, opacity: 0.8 }}>
+            BY ROJIT ENTERPRISE
+          </p>
         </div>
 
         <div style={{ display: 'flex', gap: '4px', marginBottom: '28px', background: 'rgba(0,0,0,0.3)', borderRadius: '10px', padding: '4px' }}>

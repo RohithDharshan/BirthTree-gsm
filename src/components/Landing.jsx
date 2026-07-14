@@ -129,11 +129,13 @@ export default function Landing() {
         padding: '18px clamp(20px, 4vw, 44px)',
       }}>
         <span style={{
+          display: 'flex', alignItems: 'center', gap: 10,
           fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-main)',
-          padding: '8px 16px', borderRadius: 10, background: 'rgba(14,12,9,0.5)',
+          padding: '6px 16px 6px 8px', borderRadius: 999, background: 'rgba(14,12,9,0.5)',
           backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
         }}>
-          BirthTree
+          <img src="/kinbloom-mark.png" alt="" style={{ width: 30, height: 30, borderRadius: '50%' }} />
+          Kin<span style={{ color: GOLD, marginLeft: -8 }}>Bloom</span>
         </span>
         <Link to="/auth" style={{
           color: GOLD, textDecoration: 'none', fontWeight: 600, fontSize: '0.9rem',
@@ -152,16 +154,11 @@ export default function Landing() {
           overflow: 'hidden',
         }}>
           <motion.div style={reduceMotion ? {} : { scale: logoScale, opacity: logoOpacity }}>
-            <div aria-hidden style={{
-              width: 'clamp(120px, 18vw, 180px)', height: 'clamp(120px, 18vw, 180px)',
-              borderRadius: '26%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'linear-gradient(135deg, #d9a04a, #c96f85)',
-              boxShadow: '0 0 60px rgba(230,179,79,0.35), 0 24px 80px rgba(0,0,0,0.5)',
-              fontFamily: 'var(--font-display)', fontWeight: 600,
-              fontSize: 'clamp(52px, 8vw, 80px)', color: '#fff', letterSpacing: '-0.02em',
-            }}>
-              BT
-            </div>
+            <img src="/kinbloom-mark.png" alt="KinBloom emblem" style={{
+              width: 'clamp(150px, 22vw, 220px)', height: 'clamp(150px, 22vw, 220px)',
+              borderRadius: '50%', display: 'block',
+              boxShadow: '0 0 70px rgba(230,179,79,0.4), 0 24px 80px rgba(0,0,0,0.5)',
+            }} />
           </motion.div>
 
           <motion.p
@@ -169,9 +166,16 @@ export default function Landing() {
               ...(reduceMotion ? {} : { opacity: wordOpacity }),
               marginTop: 28, fontFamily: 'var(--font-display)',
               fontSize: 'clamp(1.9rem, 4.5vw, 3.2rem)', color: 'var(--text-main)', fontWeight: 500,
+              textAlign: 'center',
             }}
           >
-            BirthTree
+            Kin<span style={{ color: GOLD }}>Bloom</span>
+            <span style={{
+              display: 'block', fontFamily: 'Outfit, sans-serif', fontWeight: 400,
+              fontSize: 'clamp(0.85rem, 1.4vw, 1rem)', color: '#c9c0b2', marginTop: 10,
+            }}>
+              Celebrate every moment. Preserve every generation.
+            </span>
           </motion.p>
 
           {!reduceMotion && (
@@ -264,7 +268,7 @@ export default function Landing() {
           viewport={{ once: true, margin: '-80px' }} transition={{ ...spring, delay: 0.12 }}
           style={{ margin: '18px auto 48px', color: '#c9c0b2', lineHeight: 1.75, maxWidth: '54ch' }}
         >
-          Say who someone is, a mother, a husband, a daughter, and BirthTree
+          Say who someone is, a mother, a husband, a daughter, and KinBloom
           connects the generations by itself. Couples get a heart. Children hang
           from both parents. The tree rebuilds every time the family does.
         </motion.p>
@@ -347,9 +351,12 @@ export default function Landing() {
             Create your family <ArrowRight size={18} />
           </Link>
         </motion.div>
-        <footer style={{ marginTop: 'clamp(60px, 10vh, 110px)', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
-          BirthTree · made for families ·{' '}
+        <footer style={{ marginTop: 'clamp(60px, 10vh, 110px)', color: 'var(--text-muted)', fontSize: '0.82rem', lineHeight: 2 }}>
+          KinBloom · made for families ·{' '}
           <Link to="/auth" style={{ color: 'var(--text-muted)' }}>Sign in</Link>
+          <span style={{ display: 'block', fontSize: '0.72rem', letterSpacing: '0.14em', opacity: 0.75 }}>
+            BY ROJIT ENTERPRISE
+          </span>
         </footer>
       </section>
     </div>

@@ -88,7 +88,7 @@ export default function AdminPanel() {
           <h1 className="text-gradient" style={{ fontSize: '2.2rem', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <ShieldCheck size={30} color="#e6b34f" /> Admin Dashboard
           </h1>
-          <p style={{ color: 'var(--text-muted)' }}>All users, families, and usage across BirthTree</p>
+          <p style={{ color: 'var(--text-muted)' }}>All users, families, and usage across KinBloom</p>
         </div>
         <button className="btn-outline" onClick={load} disabled={loading}>
           <RefreshCw size={16} style={loading ? { animation: 'spin 1s linear infinite' } : {}} /> Refresh

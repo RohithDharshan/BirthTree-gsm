@@ -139,7 +139,7 @@ export default function CalendarView() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `birthtree-calendar-${new Date().toISOString().split('T')[0]}.png`;
+      link.download = `kinbloom-calendar-${new Date().toISOString().split('T')[0]}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

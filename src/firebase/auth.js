@@ -8,6 +8,9 @@ import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from './config';
 
 // We use synthetic emails so users only need a username + password.
+// NOTE: this domain is internal-only and must stay @birthtree.app —
+// every existing Auth account was created with it; changing it would
+// lock all current users out.
 const toEmail = (username) => `${username.toLowerCase().trim()}@birthtree.app`;
 
 export const registerUser = async (username, password) => {
