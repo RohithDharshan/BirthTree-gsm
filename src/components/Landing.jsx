@@ -135,10 +135,8 @@ export default function Landing() {
     if (reduceMotion) return;
     const intro = introRef.current;
     const cal = calRef.current;
-    let raf = 0;
 
     const update = () => {
-      raf = 0;
       if (intro) {
         const total = Math.max(1, intro.offsetHeight - window.innerHeight);
         const p = clamp01((window.scrollY - intro.offsetTop) / total);
@@ -166,14 +164,15 @@ export default function Landing() {
       }
     };
 
-    const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
+    // Synchronous on purpose: rAF is paused in background/throttled tabs,
+    // which is exactly how framer's useScroll died. The per-tick work here
+    // is a handful of style property writes, safe to do inline.
     update();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
     return () => {
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
-      if (raf) cancelAnimationFrame(raf);
+      window.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
     };
   }, [reduceMotion]);
 
