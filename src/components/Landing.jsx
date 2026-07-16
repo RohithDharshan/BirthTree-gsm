@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
-import { Bell, Send, Smartphone, Mail, ArrowRight, ChevronDown } from 'lucide-react';
+import { Bell, Send, Smartphone, Mail, ArrowRight, ChevronDown, MessageSquare } from 'lucide-react';
 
 const GOLD = '#e6b34f';
 const ROSE = '#c96f85';
@@ -387,6 +387,35 @@ export default function Landing() {
             </motion.div>
           ))}
         </div>
+      </section>
+
+      {/* ── Still need help? ── */}
+      <section style={{ padding: 'clamp(40px, 7vh, 80px) 24px', maxWidth: 860, margin: '0 auto' }}>
+        <motion.div
+          initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-60px' }} transition={spring}
+          className="glass-panel"
+          style={{
+            padding: 'clamp(28px, 5vw, 44px)', textAlign: 'center',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+          }}
+        >
+          <MessageSquare size={28} color={GOLD} aria-hidden />
+          <h2 style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)', fontWeight: 600, color: 'var(--text-main)' }}>
+            Still need help?
+          </h2>
+          <p style={{ color: '#c9c0b2', lineHeight: 1.7, maxWidth: '46ch' }}>
+            If something is unclear or not working, write to us and we will reply by email.
+          </p>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center', marginTop: 10 }}>
+            <Link to="/contact" className="btn-primary" style={{ textDecoration: 'none', padding: '13px 28px' }}>
+              Contact us
+            </Link>
+            <Link to="/guide" className="btn-outline" style={{ textDecoration: 'none', padding: '13px 28px' }}>
+              Read the guide
+            </Link>
+          </div>
+        </motion.div>
       </section>
 
       {/* ── Final: gold-drenched close ── */}
