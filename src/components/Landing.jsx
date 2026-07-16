@@ -195,13 +195,22 @@ export default function Landing() {
           <img src="/kinbloom-mark.png" alt="" style={{ width: 30, height: 30, borderRadius: '50%' }} />
           <span>Kin<span style={{ color: GOLD }}>Bloom</span></span>
         </span>
-        <Link to="/auth" style={{
-          color: GOLD, textDecoration: 'none', fontWeight: 600, fontSize: '0.9rem',
-          padding: '8px 18px', border: `1px solid rgba(230,179,79,0.4)`, borderRadius: 10,
-          background: 'rgba(14,12,9,0.5)', backdropFilter: 'blur(10px)',
-        }}>
-          Sign in
-        </Link>
+        <span style={{ display: 'flex', gap: 10 }}>
+          <Link to="/guide" style={{
+            color: 'var(--text-main)', textDecoration: 'none', fontWeight: 600, fontSize: '0.9rem',
+            padding: '8px 18px', borderRadius: 10,
+            background: 'rgba(14,12,9,0.5)', backdropFilter: 'blur(10px)',
+          }}>
+            How it works
+          </Link>
+          <Link to="/auth" style={{
+            color: GOLD, textDecoration: 'none', fontWeight: 600, fontSize: '0.9rem',
+            padding: '8px 18px', border: `1px solid rgba(230,179,79,0.4)`, borderRadius: 10,
+            background: 'rgba(14,12,9,0.5)', backdropFilter: 'blur(10px)',
+          }}>
+            Sign in
+          </Link>
+        </span>
       </header>
 
       {/* ── Act 1: the logo, then straight through it ── */}
@@ -411,6 +420,7 @@ export default function Landing() {
         </motion.div>
         <footer style={{ marginTop: 'clamp(60px, 10vh, 110px)', color: 'var(--text-muted)', fontSize: '0.82rem', lineHeight: 2 }}>
           KinBloom · made for families ·{' '}
+          <Link to="/guide" style={{ color: 'var(--text-muted)' }}>Step by step guide</Link> ·{' '}
           <Link to="/auth" style={{ color: 'var(--text-muted)' }}>Sign in</Link>
           <span style={{ display: 'block', fontSize: '0.72rem', letterSpacing: '0.14em', opacity: 0.75 }}>
             BY ROJIT ENTERPRISE

@@ -8,6 +8,7 @@ import AuthScreen from './components/AuthScreen';
 import FamilySetup from './components/FamilySetup';
 import Landing from './components/Landing';
 import AdminPanel from './components/AdminPanel';
+import Guide from './components/Guide';
 
 function AppRoutes() {
   const { currentUser, userProfile, isSuperAdmin, loading } = useAuth();
@@ -24,6 +25,7 @@ function AppRoutes() {
     return (
       <Routes>
         <Route path="/auth" element={<AuthScreen />} />
+        <Route path="/guide" element={<Guide />} />
         <Route path="*" element={<Landing />} />
       </Routes>
     );
@@ -37,6 +39,7 @@ function AppRoutes() {
           isSuperAdmin && !userProfile?.familyId ? <Navigate to="/admin" replace /> : <CalendarView />
         } />
         <Route path="tree" element={<FamilyTreeView />} />
+        <Route path="guide" element={<Guide />} />
         <Route path="admin" element={<AdminPanel />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

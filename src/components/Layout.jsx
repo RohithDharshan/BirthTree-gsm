@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { Calendar, Network, LogOut, Users, Activity, Copy, Check, X, Lock, Unlock, MessageCircle, Send, Smartphone, Bell, ShieldCheck } from 'lucide-react';
+import { Calendar, Network, LogOut, Users, Activity, Copy, Check, X, Lock, Unlock, MessageCircle, Send, Smartphone, Bell, ShieldCheck, HelpCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { logoutUser, updateUserNotificationSettings } from '../firebase/auth';
@@ -195,6 +195,9 @@ export default function Layout() {
           <NavLink to="/tree" style={({ isActive }) => navStyle(isActive, 'violet')}>
             <Network size={18} /> Family Tree
           </NavLink>
+          <NavLink to="/guide" style={({ isActive }) => navStyle(isActive, 'cyan')}>
+            <HelpCircle size={18} /> Guide
+          </NavLink>
           {isSuperAdmin && (
             <NavLink to="/admin" style={({ isActive }) => navStyle(isActive, 'cyan')}>
               <ShieldCheck size={18} /> Admin
@@ -239,6 +242,10 @@ export default function Layout() {
         <NavLink to="/tree" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active-violet' : ''}`}>
           <Network size={20} />
           <span>Tree</span>
+        </NavLink>
+        <NavLink to="/guide" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`}>
+          <HelpCircle size={20} />
+          <span>Guide</span>
         </NavLink>
         <button onClick={() => { setShowLog(false); setShowInfo(v => !v); }}
           className={`mobile-nav-item ${showInfo ? 'active-violet' : ''}`}>
