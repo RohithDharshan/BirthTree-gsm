@@ -421,6 +421,7 @@ export default function Landing() {
         <footer style={{ marginTop: 'clamp(60px, 10vh, 110px)', color: 'var(--text-muted)', fontSize: '0.82rem', lineHeight: 2 }}>
           KinBloom · made for families ·{' '}
           <Link to="/guide" style={{ color: 'var(--text-muted)' }}>Step by step guide</Link> ·{' '}
+          <Link to="/contact" style={{ color: 'var(--text-muted)' }}>Contact us</Link> ·{' '}
           <Link to="/auth" style={{ color: 'var(--text-muted)' }}>Sign in</Link>
           <span style={{ display: 'block', fontSize: '0.72rem', letterSpacing: '0.14em', opacity: 0.75 }}>
             BY ROJIT ENTERPRISE

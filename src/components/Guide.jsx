@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import {
   CalendarDays, Network, Bell, Send, Smartphone, Mail,
-  UserPlus, KeyRound, ArrowLeft, MessageSquare, CheckCircle2,
+  KeyRound, ArrowLeft, MessageSquare,
 } from 'lucide-react';
 
 const GOLD = '#e6b34f';
@@ -48,88 +48,6 @@ function Section({ icon, title, intro, children }) {
       {intro && <p style={{ color: 'var(--text-muted)', lineHeight: 1.7, margin: '4px 0 24px', maxWidth: '62ch' }}>{intro}</p>}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>{children}</div>
     </motion.section>
-  );
-}
-
-function ContactForm() {
-  const [form, setForm] = useState({ subject: '', fromEmail: '', description: '', website: '' });
-  const [status, setStatus] = useState('idle'); // idle | sending | sent | error
-  const [errMsg, setErrMsg] = useState('');
-
-  const submit = async (e) => {
-    e.preventDefault();
-    setStatus('sending'); setErrMsg('');
-    try {
-      const res = await fetch('/api/contact', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
-      setStatus('sent');
-      setForm({ subject: '', fromEmail: '', description: '', website: '' });
-    } catch (err) {
-      setStatus('error');
-      setErrMsg(err.message);
-    }
-  };
-
-  if (status === 'sent') {
-    return (
-      <div style={{ textAlign: 'center', padding: '32px 16px' }}>
-        <CheckCircle2 size={40} color="#22c55e" style={{ marginBottom: 14 }} />
-        <h3 style={{ fontSize: '1.3rem', color: 'var(--text-main)', marginBottom: 8 }}>Message sent</h3>
-        <p style={{ color: 'var(--text-muted)', lineHeight: 1.7 }}>
-          Thanks for writing in. We reply to the email address you gave, usually within a day or two.
-        </p>
-        <button className="btn-outline" style={{ marginTop: 20 }} onClick={() => setStatus('idle')}>
-          Send another message
-        </button>
-      </div>
-    );
-  }
-
-  const label = { display: 'block', marginBottom: 8, color: 'var(--text-muted)', fontSize: '0.88rem' };
-
-  return (
-    <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 18 }}>
-        <div>
-          <label style={label} htmlFor="c-subject">Subject</label>
-          <input id="c-subject" required maxLength={150} type="text" value={form.subject}
-            onChange={e => setForm(f => ({ ...f, subject: e.target.value }))}
-            placeholder="What is this about?" />
-        </div>
-        <div>
-          <label style={label} htmlFor="c-email">Your email</label>
-          <input id="c-email" required type="email" value={form.fromEmail}
-            onChange={e => setForm(f => ({ ...f, fromEmail: e.target.value }))}
-            placeholder="you@example.com" />
-        </div>
-      </div>
-      <div>
-        <label style={label} htmlFor="c-desc">Description</label>
-        <textarea id="c-desc" required maxLength={4000} rows={6} value={form.description}
-          onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-          placeholder="Tell us what you need help with, or what you'd like to see in KinBloom."
-          style={{ resize: 'vertical', minHeight: 130, fontFamily: 'inherit' }} />
-      </div>
-      {/* Honeypot: hidden from people, tempting to bots */}
-      <input type="text" value={form.website} tabIndex={-1} autoComplete="off"
-        onChange={e => setForm(f => ({ ...f, website: e.target.value }))}
-        style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }}
-        aria-hidden="true" />
-      {status === 'error' && (
-        <div style={{ color: '#ff4d4d', fontSize: '0.88rem', padding: '10px 14px', background: 'rgba(255,77,77,0.1)', borderRadius: 8, border: '1px solid rgba(255,77,77,0.3)' }}>
-          {errMsg}
-        </div>
-      )}
-      <button type="submit" className="btn-primary" disabled={status === 'sending'}
-        style={{ justifyContent: 'center', padding: '13px 24px', opacity: status === 'sending' ? 0.7 : 1 }}>
-        {status === 'sending' ? 'Sending…' : <><Send size={16} /> Send message</>}
-      </button>
-    </form>
   );
 }
 
@@ -234,10 +152,25 @@ export default function Guide() {
         </Step>
       </Section>
 
-      <Section icon={<MessageSquare size={20} />} title="Contact us"
-        intro="Stuck, found a problem, or have an idea? Write to us and we will get back to you by email.">
-        <ContactForm />
-      </Section>
+      {/* Pointer to the separate contact page */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }} transition={spring}
+        className="glass-panel"
+        style={{
+          padding: 'clamp(24px, 4vw, 36px)', textAlign: 'center',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+        }}
+      >
+        <MessageSquare size={26} color={GOLD} />
+        <h2 style={{ fontSize: '1.4rem', fontWeight: 600, color: 'var(--text-main)' }}>Still need help?</h2>
+        <p style={{ color: 'var(--text-muted)', lineHeight: 1.7, maxWidth: '46ch' }}>
+          If something is unclear or not working, write to us and we will reply by email.
+        </p>
+        <Link to="/contact" className="btn-primary" style={{ textDecoration: 'none', marginTop: 8 }}>
+          Contact us
+        </Link>
+      </motion.div>
 
       <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.75rem', letterSpacing: '0.12em', marginTop: 36 }}>
         KINBLOOM · BY ROJIT ENTERPRISE
