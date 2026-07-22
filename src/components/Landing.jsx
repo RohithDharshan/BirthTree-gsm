@@ -184,28 +184,31 @@ export default function Landing() {
       <header style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        padding: '18px clamp(20px, 4vw, 44px)',
+        gap: 'clamp(6px, 2vw, 16px)',
+        padding: 'clamp(10px, 3vw, 18px) clamp(12px, 4vw, 44px)',
       }}>
         <span style={{
-          display: 'flex', alignItems: 'center', gap: 10,
-          fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-main)',
-          padding: '6px 16px 6px 8px', borderRadius: 999, background: 'rgba(14,12,9,0.5)',
-          backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+          display: 'flex', alignItems: 'center', gap: 'clamp(6px, 1.5vw, 10px)', flexShrink: 0,
+          fontFamily: 'var(--font-display)', fontSize: 'clamp(0.9rem, 3vw, 1.1rem)', fontWeight: 600, color: 'var(--text-main)',
+          padding: 'clamp(5px, 1.2vw, 6px) clamp(10px, 3vw, 16px) clamp(5px, 1.2vw, 6px) clamp(5px, 1.2vw, 6px)',
+          borderRadius: 999, background: 'rgba(14,12,9,0.5)',
+          backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', whiteSpace: 'nowrap',
         }}>
-          <img src="/kinbloom-mark.png" alt="" style={{ width: 30, height: 30, borderRadius: '50%' }} />
+          <img src="/kinbloom-mark.png" alt="" style={{ width: 'clamp(24px, 6vw, 30px)', height: 'clamp(24px, 6vw, 30px)', borderRadius: '50%', flexShrink: 0 }} />
           <span>Kin<span style={{ color: GOLD }}>Bloom</span></span>
         </span>
-        <span style={{ display: 'flex', gap: 10 }}>
+        <span style={{ display: 'flex', gap: 'clamp(6px, 2vw, 10px)', flexShrink: 0 }}>
           <Link to="/guide" style={{
-            color: 'var(--text-main)', textDecoration: 'none', fontWeight: 600, fontSize: '0.9rem',
-            padding: '8px 18px', borderRadius: 10,
+            color: 'var(--text-main)', textDecoration: 'none', fontWeight: 600, fontSize: 'clamp(0.72rem, 2.4vw, 0.9rem)',
+            padding: 'clamp(6px, 1.6vw, 8px) clamp(10px, 3.2vw, 18px)', borderRadius: 10, whiteSpace: 'nowrap',
             background: 'rgba(14,12,9,0.5)', backdropFilter: 'blur(10px)',
           }}>
             How it works
           </Link>
           <Link to="/auth" style={{
-            color: GOLD, textDecoration: 'none', fontWeight: 600, fontSize: '0.9rem',
-            padding: '8px 18px', border: `1px solid rgba(230,179,79,0.4)`, borderRadius: 10,
+            color: GOLD, textDecoration: 'none', fontWeight: 600, fontSize: 'clamp(0.72rem, 2.4vw, 0.9rem)',
+            padding: 'clamp(6px, 1.6vw, 8px) clamp(10px, 3.2vw, 18px)', whiteSpace: 'nowrap',
+            border: `1px solid rgba(230,179,79,0.4)`, borderRadius: 10,
             background: 'rgba(14,12,9,0.5)', backdropFilter: 'blur(10px)',
           }}>
             Sign in

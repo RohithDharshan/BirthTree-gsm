@@ -37,7 +37,7 @@ const photoFill = (evt, onClick, style = {}) => (
   </div>
 );
 
-const renderDayEvents = (dayEvents, setSelectedEvent) => {
+const renderDayEvents = (dayEvents, setSelectedEvent, isMobile) => {
   const count = dayEvents.length;
   if (count === 0) return null;
 
@@ -45,6 +45,26 @@ const renderDayEvents = (dayEvents, setSelectedEvent) => {
 
   // All layouts are absolutely positioned to fill the entire cell
   const base = { position: 'absolute', inset: 0, overflow: 'hidden', borderRadius: '4px' };
+
+  // On phones, splitting 2-4 tiny photos into slivers makes them illegible
+  // and impossible to tap accurately. Show one clear avatar plus a count
+  // badge instead; tapping anywhere in the cell opens the full day list.
+  if (isMobile && count > 1) {
+    const primary = dayEvents.find(e => e.photo) || dayEvents[0];
+    return (
+      <div style={base}>
+        {photoFill(primary, undefined, { pointerEvents: 'none' })}
+        <div style={{
+          position: 'absolute', bottom: 2, right: 2,
+          minWidth: 16, height: 16, padding: '0 3px', borderRadius: 8,
+          background: borderColor, color: '#0e0c09',
+          fontSize: '0.6rem', fontWeight: 800, lineHeight: '16px', textAlign: 'center',
+        }}>
+          +{count}
+        </div>
+      </div>
+    );
+  }
 
   if (count === 1) {
     return (
@@ -100,11 +120,27 @@ export default function CalendarView() {
   const [isAddModalOpen,  setIsAddModalOpen]  = useState(false);
   const [selectedEvent,   setSelectedEvent]   = useState(null);
   const [selectedDayEvents, setSelectedDayEvents] = useState(null);
-  const [selectedMonth,   setSelectedMonth]   = useState('all');
+  // On phones, default to the current month instead of stacking all 12 —
+  // "All Months" is still one tap away in the dropdown.
+  const [selectedMonth,   setSelectedMonth]   = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 640px)').matches
+      ? String(new Date().getMonth())
+      : 'all'
+  );
+  const [isMobile,        setIsMobile]        = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 640px)').matches
+  );
   const [notifPerm,       setNotifPerm]       = useState(() =>
     'Notification' in window ? Notification.permission : 'unsupported'
   );
   const calendarRef = useRef(null);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 640px)');
+    const onChange = () => setIsMobile(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
 
   // Ask for notification permission once on first load
   useEffect(() => {
@@ -331,7 +367,7 @@ export default function CalendarView() {
                             {day}
                           </div>
                           <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-                            {renderDayEvents(dayEvents, setSelectedEvent)}
+                            {renderDayEvents(dayEvents, setSelectedEvent, isMobile)}
                           </div>
                         </>
                       ) : day}

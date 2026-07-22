@@ -578,9 +578,23 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   }
 
   .month-card {
-    padding: 12px;
+    padding: 10px;
   }
-  
+
+  /* Reclaim a few px per day cell so tap targets are as large as possible */
+  .days-grid {
+    gap: 3px;
+  }
+
+  .day-header {
+    font-size: 0.62rem;
+    padding-bottom: 4px;
+  }
+
+  .day-cell {
+    border-radius: 6px;
+  }
+
   /* Activity log mobile fit */
   .activity-log-flyout {
     width: 90% !important;
@@ -588,6 +602,16 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     right: 5% !important;
     left: 5% !important;
     max-height: 50vh !important;
+  }
+
+  /* Family tree: keep react-flow's zoom/fit controls clear of the fixed
+     bottom tab bar — otherwise the lower buttons are unreachable. */
+  .react-flow__controls {
+    bottom: 96px !important;
+  }
+
+  .react-flow__panel.react-flow__panel {
+    margin: 12px !important;
   }
 }
 
