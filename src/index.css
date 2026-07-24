@@ -94,6 +94,60 @@ body::after {
   border-color: rgba(255, 255, 255, 0.16);
 }
 
+/* Depth variants used on the landing page — primary cards read as
+   elevated (stronger blur, brighter edge, warm inner glow); secondary
+   cards stay flatter so the hierarchy is felt, not just decorated. */
+.glass-elevated {
+  background:
+    linear-gradient(160deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.015) 45%, rgba(0,0,0,0.12) 100%),
+    var(--bg-card);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-top-color: rgba(255,255,255,0.3);
+  border-radius: 20px;
+  box-shadow:
+    0 28px 64px rgba(0,0,0,0.5),
+    0 0 0 1px rgba(230,179,79,0.05),
+    inset 0 1px 0 rgba(255,255,255,0.12),
+    inset 0 0 46px rgba(230,179,79,0.035);
+}
+
+.glass-flat {
+  background: rgba(255,255,255,0.03);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+/* Slow-floating ambient orbs — landing page only, scoped by container */
+.ambient-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  pointer-events: none;
+  will-change: transform;
+}
+
+@keyframes orb-float-a {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(4%, -6%) scale(1.08); }
+}
+@keyframes orb-float-b {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(-5%, 5%) scale(1.05); }
+}
+@keyframes orb-float-c {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(3%, 4%) scale(0.95); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient-orb { animation: none !important; }
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

@@ -134,6 +134,14 @@ export default function CalendarView() {
     'Notification' in window ? Notification.permission : 'unsupported'
   );
   const calendarRef = useRef(null);
+  // Month cards fade in with a scroll-triggered "whileInView" animation, so
+  // any card the user hasn't scrolled past yet is still invisible (opacity 0)
+  // in the DOM. html-to-image snapshots exactly that DOM state, which is why
+  // downloads used to come out blank below whichever row was last scrolled
+  // to. isExporting forces every card to its fully-settled, visible state
+  // (and drops the 3D perspective, which some export renderers mishandle)
+  // just for the capture.
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 640px)');
@@ -159,13 +167,19 @@ export default function CalendarView() {
   const handleDownload = async () => {
     if (!calendarRef.current) return;
     try {
+      setIsExporting(true);
+      // Two animation-frame waits: one lets React commit the "settled" props
+      // to the DOM, the next lets the browser actually paint them, so the
+      // capture below never sees a mid-transition frame.
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
       const blob = await toBlob(calendarRef.current, {
         backgroundColor: '#0e0c09',
         pixelRatio: 2,
         useCORS: true,
         allowTaint: true,
       });
-      
+
       if (!blob) {
         alert("Failed to generate image. Please try again.");
         return;
@@ -185,6 +199,8 @@ export default function CalendarView() {
     } catch (err) {
       console.error("Download error:", err);
       alert("Failed to generate image. " + err.message);
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -307,7 +323,7 @@ export default function CalendarView() {
         </div>
       </div>
 
-      <div ref={calendarRef} className="calendar-grid" style={{ perspective: '1400px' }}>
+      <div ref={calendarRef} className="calendar-grid" style={{ perspective: isExporting ? 'none' : '1400px' }}>
         {MONTHS.map((month, monthIndex) => {
           if (selectedMonth !== 'all' && Number(selectedMonth) !== monthIndex) return null;
 
@@ -317,14 +333,24 @@ export default function CalendarView() {
           const firstWeekday = new Date(year, monthIndex, 1).getDay();
           const today = new Date();
 
+          // While exporting, skip the scroll-triggered reveal entirely and
+          // render every card already in its final, fully-visible state —
+          // otherwise cards below the fold are still invisible in the DOM
+          // and come out blank in the downloaded image.
+          const revealProps = isExporting
+            ? { initial: false, animate: { opacity: 1, y: 0, rotateX: 0, scale: 1 }, transition: { duration: 0 } }
+            : {
+                initial: { opacity: 0, y: 60, rotateX: 18, scale: 0.94 },
+                whileInView: { opacity: 1, y: 0, rotateX: 0, scale: 1 },
+                viewport: { once: true, margin: '-60px' },
+                transition: { type: 'spring', stiffness: 90, damping: 16, delay: (monthIndex % 4) * 0.07 },
+              };
+
           return (
             <motion.div
-              initial={{ opacity: 0, y: 60, rotateX: 18, scale: 0.94 }}
-              whileInView={{ opacity: 1, y: 0, rotateX: 0, scale: 1 }}
-              viewport={{ once: true, margin: '-60px' }}
-              transition={{ type: 'spring', stiffness: 90, damping: 16, delay: (monthIndex % 4) * 0.07 }}
-              whileHover={{ y: -6, rotateX: 2, transition: { type: 'spring', stiffness: 300, damping: 20 } }}
-              style={{ transformStyle: 'preserve-3d' }}
+              {...revealProps}
+              whileHover={isExporting ? undefined : { y: -6, rotateX: 2, transition: { type: 'spring', stiffness: 300, damping: 20 } }}
+              style={{ transformStyle: isExporting ? 'flat' : 'preserve-3d' }}
               key={month}
               className="glass-panel month-card"
             >

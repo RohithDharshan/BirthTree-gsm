@@ -398,11 +398,18 @@ function TreeLogic() {
     window.requestAnimationFrame(() => fitView());
   };
 
-  // Download
+  // Download — the wrapper div is only ever as big as the on-screen canvas,
+  // so whatever isn't currently panned/zoomed into view would be missing
+  // from a plain snapshot. Snap the viewport to fit every node first.
   const handleDownload = async () => {
     if (!wrapper.current) return;
     try {
       document.querySelectorAll('.react-flow__controls,.react-flow__panel').forEach(el => el.style.visibility = 'hidden');
+      fitView({ padding: 0.15, duration: 0 });
+      // Two frame waits: one for the fitted transform to commit, one for
+      // the browser to actually paint it, before the capture reads the DOM.
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
       const blob = await toBlob(wrapper.current, { backgroundColor: '#0e0c09', pixelRatio: 2 });
       document.querySelectorAll('.react-flow__controls,.react-flow__panel').forEach(el => el.style.visibility = 'visible');
       if (!blob) { alert('Could not generate image.'); return; }
