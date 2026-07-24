@@ -455,9 +455,6 @@ export default function Landing() {
           <Link to="/guide" style={{ color: 'var(--text-muted)' }}>Step by step guide</Link> ·{' '}
           <Link to="/contact" style={{ color: 'var(--text-muted)' }}>Contact us</Link> ·{' '}
           <Link to="/auth" style={{ color: 'var(--text-muted)' }}>Sign in</Link>
-          <span style={{ display: 'block', fontSize: '0.72rem', letterSpacing: '0.14em', opacity: 0.75 }}>
-            BY ROJIT ENTERPRISE
-          </span>
         </footer>
       </section>
     </div>

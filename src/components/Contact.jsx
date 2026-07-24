@@ -138,9 +138,6 @@ export default function Contact() {
         </span>
       </div>
 
-      <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.75rem', letterSpacing: '0.12em', marginTop: 40 }}>
-        KINBLOOM · BY ROJIT ENTERPRISE
-      </p>
     </div>
   );
 }

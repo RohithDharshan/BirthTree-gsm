@@ -55,9 +55,6 @@ export default function AuthScreen() {
           <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: 6 }}>
             Celebrate every moment. Preserve every generation.
           </p>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', letterSpacing: '0.12em', marginTop: 8, opacity: 0.8 }}>
-            BY ROJIT ENTERPRISE
-          </p>
         </div>
 
         <div style={{ display: 'flex', gap: '4px', marginBottom: '28px', background: 'rgba(0,0,0,0.3)', borderRadius: '10px', padding: '4px' }}>
