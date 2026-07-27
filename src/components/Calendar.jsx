@@ -349,7 +349,6 @@ export default function CalendarView() {
           return (
             <motion.div
               {...revealProps}
-              whileHover={isExporting ? undefined : { y: -6, rotateX: 2, transition: { type: 'spring', stiffness: 300, damping: 20 } }}
               style={{ transformStyle: isExporting ? 'flat' : 'preserve-3d' }}
               key={month}
               className="glass-panel month-card"

@@ -419,7 +419,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 .day-cell.has-event:hover {
   box-shadow: var(--glow-violet);
-  transform: scale(1.08);
   z-index: 10;
 }
 
