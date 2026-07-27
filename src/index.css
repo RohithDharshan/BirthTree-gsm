@@ -433,6 +433,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   border: 1px solid var(--accent-cyan);
 }
 
+.family-tree-view {
+  height: calc(100dvh - 80px);
+  width: 100%;
+}
+
 /* React Flow customizations */
 .react-flow__node {
   border-radius: 12px;
@@ -665,6 +670,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
   .react-flow__panel.react-flow__panel {
     margin: 12px !important;
+  }
+
+  /* The canvas height itself must also shrink by the tab bar's reserved
+     space (64px bar + 16px margin, both top and bottom of the pill), or
+     fitView() centers everyone inside a taller box than what's actually
+     visible above the bar — cutting off whoever lands in that gap. */
+  .family-tree-view {
+    height: calc(100dvh - 80px - 96px) !important;
   }
 }
 

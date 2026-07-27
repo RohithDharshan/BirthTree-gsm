@@ -225,7 +225,7 @@ export default function Landing() {
           overflow: 'hidden',
         }}>
           <img src="/kinbloom-mark.png" alt="KinBloom emblem" style={{
-            width: 'clamp(150px, 22vw, 220px)', height: 'clamp(150px, 22vw, 220px)',
+            width: 'clamp(180px, 42vw, 220px)', height: 'clamp(180px, 42vw, 220px)',
             borderRadius: '50%', display: 'block',
             boxShadow: '0 0 70px rgba(230,179,79,0.4), 0 24px 80px rgba(0,0,0,0.5)',
             transform: reduceMotion ? 'none' : 'scale(var(--logo-s, 1))',
@@ -235,7 +235,7 @@ export default function Landing() {
 
           <p style={{
             marginTop: 28, fontFamily: 'var(--font-display)',
-            fontSize: 'clamp(1.9rem, 4.5vw, 3.2rem)', color: 'var(--text-main)', fontWeight: 500,
+            fontSize: 'clamp(2.2rem, 8vw, 3.2rem)', color: 'var(--text-main)', fontWeight: 500,
             textAlign: 'center',
             opacity: reduceMotion ? 1 : 'var(--word-o, 1)',
             transform: reduceMotion ? 'none' : 'translateY(var(--word-y, 0px))',

@@ -131,7 +131,12 @@ const buildGraph = (persons) => {
 const runDagre = (nodes, edges, persons) => {
   const g = new dagre.graphlib.Graph();
   g.setDefaultEdgeLabel(() => ({}));
-  g.setGraph({ rankdir: 'TB', ranksep: 110, nodesep: 70 });
+  // Wider than the visual minimum on purpose: react-flow never lets a pan
+  // gesture start on top of a node (by design, so click-to-select stays
+  // reliable), so panning only ever works from the empty gaps between
+  // cards. Narrow gaps meant that space was too small to reliably grab,
+  // especially on touch — this widens the only draggable area there is.
+  g.setGraph({ rankdir: 'TB', ranksep: 150, nodesep: 110 });
 
   nodes.forEach(n => {
     if (n.type === 'junctionNode') g.setNode(n.id, { width: JUNC_R * 2, height: JUNC_R * 2 });
@@ -430,9 +435,16 @@ function TreeLogic() {
           onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
           onConnect={onConnect} onSelectionChange={onSelectionChange}
           nodeTypes={nodeTypes} fitView
+          fitViewOptions={{ padding: 0.2 }}
           deleteKeyCode={['Backspace', 'Delete']}
-          nodesDraggable={true}
+          // Layout is fully automatic (dagre recomputes it on every add/
+          // delete), so dragging a card was never a real, persisted
+          // feature — it just made the whole canvas hard to pan on touch,
+          // since only the small gaps between cards were draggable space.
+          // Disabling it means a touch/drag anywhere pans the tree.
+          nodesDraggable={false}
           elementsSelectable={true}
+          proOptions={{ hideAttribution: true }}
         >
           <Background color="#ffffff" gap={24} size={1} opacity={0.05} />
           <Controls style={{ background: 'rgba(26,22,17,0.85)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, overflow: 'hidden' }} />
@@ -480,7 +492,7 @@ function TreeLogic() {
 export default function FamilyTreeView() {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      style={{ height: 'calc(100vh - 80px)', width: '100%' }}>
+      className="family-tree-view">
       <ReactFlowProvider><TreeLogic /></ReactFlowProvider>
     </motion.div>
   );

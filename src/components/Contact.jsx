@@ -4,6 +4,16 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { Send, ArrowLeft, MessageSquare, CheckCircle2, Mail, Clock } from 'lucide-react';
 
+// lucide-react (this project's pinned version) has no Instagram glyph —
+// a small inline SVG avoids depending on an icon set that might not have it.
+const InstagramIcon = ({ size = 16, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+  </svg>
+);
+
 const GOLD = '#e6b34f';
 const spring = { type: 'spring', stiffness: 80, damping: 18 };
 
@@ -136,6 +146,18 @@ export default function Contact() {
         <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Clock size={14} color={GOLD} /> Usually within 1–2 days
         </span>
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'center', marginTop: 28 }}>
+        <a href="https://instagram.com/rojitenterprise" target="_blank" rel="noreferrer"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none',
+            color: 'var(--text-main)', fontSize: '0.9rem', fontWeight: 600,
+            padding: '10px 20px', borderRadius: 999,
+            border: '1px solid rgba(230,179,79,0.35)', background: 'rgba(230,179,79,0.06)',
+          }}>
+          <InstagramIcon size={16} color={GOLD} /> @rojitenterprise on Instagram
+        </a>
       </div>
 
     </div>
