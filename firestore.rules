@@ -1,31 +1,77 @@
 rules_version = '2';
 
 // Paste into Firebase Console → Firestore Database → Rules → Publish.
-// Registration needs: read on /usernames before sign-in is NOT required
-// (the app degrades gracefully), but signed-in users must be able to
-// write their own profile and username mapping.
+//
+// Isolation model:
+//   • A family and everything under it (events, tree, accessLog) can only be
+//     read or written by its members (uid present in the family's memberUids).
+//   • Creating a family is self-serve, but the creator must make themselves the
+//     sole initial member/admin.
+//   • Outsiders never touch a family's data. The one thing a non-member may do
+//     is drop a join request into families/{id}/joinRequests/{their-own-uid};
+//     a family member (admin) then approves it, which adds them to memberUids.
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function familyData(familyId) {
+      return get(/databases/$(database)/documents/families/$(familyId)).data;
+    }
+    function isMember(familyId) {
+      return isSignedIn() &&
+        request.auth.uid in familyData(familyId).memberUids;
+    }
+    function isFamilyAdmin(familyId) {
+      return isSignedIn() &&
+        familyData(familyId).createdBy == request.auth.uid;
+    }
 
     // Username → uid mapping (read needed for uniqueness check; create by owner)
     match /usernames/{name} {
       allow read: if true;
-      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
     }
 
     // User profiles: each user manages their own document
     match /users/{uid} {
-      allow read: if request.auth != null;
-      allow create, update: if request.auth != null && request.auth.uid == uid;
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && request.auth.uid == uid;
     }
 
-    // Family data: any signed-in user can read/write (members share a familyId).
-    // Covers the family doc plus all subcollections (events, tree, accessLog).
+    // ── Family record ──────────────────────────────────────────────────────
     match /families/{familyId} {
-      allow read, write: if request.auth != null;
+      // Only members can read the family record.
+      allow read: if isMember(familyId);
 
+      // Self-serve creation: creator must be the sole initial member and admin.
+      allow create: if isSignedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.memberUids == [request.auth.uid];
+
+      // Members can update the family (rename, lock, approve members …).
+      allow update: if isMember(familyId);
+
+      // Only the family admin (creator) can delete the whole family.
+      allow delete: if isFamilyAdmin(familyId);
+
+      // ── Join requests ────────────────────────────────────────────────────
+      // A signed-in user may create ONLY their own request, and only for a
+      // family that actually exists. Members (admin) can read/approve/reject;
+      // the requester can read their own status and cancel it.
+      match /joinRequests/{reqUid} {
+        allow create: if isSignedIn()
+          && request.auth.uid == reqUid
+          && request.resource.data.uid == reqUid
+          && exists(/databases/$(database)/documents/families/$(familyId));
+        allow read, update, delete: if isSignedIn()
+          && (request.auth.uid == reqUid || isMember(familyId));
+      }
+
+      // Everything else under a family (events, tree, accessLog): members only.
       match /{document=**} {
-        allow read, write: if request.auth != null;
+        allow read, write: if isMember(familyId);
       }
     }
   }

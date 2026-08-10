@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { Calendar, Network, LogOut, Users, Activity, Copy, Check, X, Lock, Unlock, MessageCircle, Send, Smartphone, Bell, ShieldCheck, HelpCircle } from 'lucide-react';
+import { Calendar, Network, LogOut, Users, Activity, Copy, Check, X, Lock, Unlock, MessageCircle, Send, Smartphone, Bell, ShieldCheck, HelpCircle, UserPlus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { logoutUser, updateUserNotificationSettings } from '../firebase/auth';
-import { toggleFamilyLock } from '../firebase/db';
+import { toggleFamilyLock, subscribeToJoinRequests, approveJoinRequest, rejectJoinRequest } from '../firebase/db';
 import { testTelegramNotification, testNtfyNotification } from '../utils/reminders';
 import { Mail } from 'lucide-react';
 import AccessLog from './AccessLog';
@@ -31,6 +31,10 @@ export default function Layout() {
   const [showInfo,    setShowInfo]    = useState(false);
   const [showLog,     setShowLog]     = useState(false);
   const [copied,      setCopied]      = useState(false);
+
+  // Pending join requests (admin only)
+  const [joinRequests, setJoinRequests] = useState([]);
+  const [reqBusy,      setReqBusy]      = useState(null);
 
   // Active settings tab ('telegram', 'ntfy')
   const [activeTab,    setActiveTab]    = useState('telegram');
@@ -62,6 +66,35 @@ export default function Layout() {
     navigator.clipboard.writeText(userProfile?.familyId || '');
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  // Admin: live list of people asking to join this family
+  useEffect(() => {
+    if (!isAdmin || !userProfile?.familyId) { setJoinRequests([]); return; }
+    return subscribeToJoinRequests(userProfile.familyId, setJoinRequests);
+  }, [isAdmin, userProfile?.familyId]);
+
+  const handleApprove = async (req) => {
+    setReqBusy(req.uid);
+    try {
+      await approveJoinRequest(userProfile.familyId, req, currentUser.uid, userProfile.username);
+    } catch (err) {
+      alert(`Could not approve: ${err.message}`);
+    } finally {
+      setReqBusy(null);
+    }
+  };
+
+  const handleReject = async (req) => {
+    if (!window.confirm(`Decline ${req.username}'s request to join?`)) return;
+    setReqBusy(req.uid);
+    try {
+      await rejectJoinRequest(userProfile.familyId, req, currentUser.uid, userProfile.username);
+    } catch (err) {
+      alert(`Could not decline: ${err.message}`);
+    } finally {
+      setReqBusy(null);
+    }
   };
 
   const handleLockToggle = async () => {
@@ -221,9 +254,14 @@ export default function Layout() {
             <Activity size={18} />
           </button>
           <button onClick={() => { setShowLog(false); setShowInfo(v => !v); }}
-            style={{ ...iconBtn, color: showInfo ? 'var(--accent-violet)' : 'var(--text-muted)' }}
+            style={{ ...iconBtn, position: 'relative', color: showInfo ? 'var(--accent-violet)' : 'var(--text-muted)' }}
             title="Family Info & Settings">
             <Users size={18} />
+            {isAdmin && joinRequests.length > 0 && (
+              <span style={{ position: 'absolute', top: 4, right: 4, minWidth: 15, height: 15, padding: '0 4px', borderRadius: 999, background: '#e6b34f', color: '#0b0a08', fontSize: '0.62rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>
+                {joinRequests.length}
+              </span>
+            )}
           </button>
           <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
           <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{userProfile?.username}</span>
@@ -248,8 +286,14 @@ export default function Layout() {
           <span>Guide</span>
         </NavLink>
         <button onClick={() => { setShowLog(false); setShowInfo(v => !v); }}
-          className={`mobile-nav-item ${showInfo ? 'active-violet' : ''}`}>
+          className={`mobile-nav-item ${showInfo ? 'active-violet' : ''}`}
+          style={{ position: 'relative' }}>
           <Users size={20} />
+          {isAdmin && joinRequests.length > 0 && (
+            <span style={{ position: 'absolute', top: 2, right: '50%', marginRight: -22, minWidth: 16, height: 16, padding: '0 4px', borderRadius: 999, background: '#e6b34f', color: '#0b0a08', fontSize: '0.62rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>
+              {joinRequests.length}
+            </span>
+          )}
           <span>Settings</span>
         </button>
         <button onClick={() => { setShowInfo(false); setShowLog(v => !v); }}
@@ -284,6 +328,46 @@ export default function Layout() {
                   </button>
                 </div>
               </div>
+
+              {/* Pending join requests (admin only) */}
+              {isAdmin && (
+                <div style={{ minWidth: '280px', maxWidth: '420px', background: 'rgba(255,255,255,0.02)', padding: '18px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                    <UserPlus size={16} color="var(--accent-cyan)" />
+                    <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--accent-cyan)' }}>Join requests</span>
+                    {joinRequests.length > 0 && (
+                      <span style={{ marginLeft: 'auto', fontSize: '0.72rem', fontWeight: 700, color: '#0b0a08', background: '#e6b34f', borderRadius: 999, padding: '1px 9px' }}>
+                        {joinRequests.length}
+                      </span>
+                    )}
+                  </div>
+                  {joinRequests.length === 0 ? (
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.78rem', lineHeight: 1.5 }}>
+                      No one is waiting to join. Share your Family ID and approve requests here.
+                    </p>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {joinRequests.map(req => (
+                        <div key={req.uid} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px' }}>
+                          <span style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {req.username}
+                          </span>
+                          <div style={{ display: 'flex', gap: '6px', marginLeft: 'auto' }}>
+                            <button title="Approve" disabled={reqBusy === req.uid} onClick={() => handleApprove(req)}
+                              style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.4)', color: '#22c55e', borderRadius: '7px', padding: '5px 10px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}>
+                              <Check size={13} /> Approve
+                            </button>
+                            <button title="Decline" disabled={reqBusy === req.uid} onClick={() => handleReject(req)}
+                              style={{ display: 'flex', alignItems: 'center', background: 'transparent', border: '1px solid rgba(255,77,77,0.4)', color: '#ff4d4d', borderRadius: '7px', padding: '5px 8px', cursor: 'pointer' }}>
+                              <X size={13} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Notification Preferences tabbed panel */}
               <div style={{ minWidth: '320px', maxWidth: '520px', background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.05)' }}>

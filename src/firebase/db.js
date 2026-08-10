@@ -4,7 +4,7 @@ import {
   query, orderBy, limit, writeBatch,
 } from 'firebase/firestore';
 import { db } from './config';
-import { setUserFamilyId, getUserByUsername } from './auth';
+import { setUserFamilyId } from './auth';
 
 // ─── Family ───────────────────────────────────────────────────────────────────
 export const createFamily = async (familyName, creatorUid, creatorUsername) => {
@@ -27,30 +27,72 @@ export const createFamily = async (familyName, creatorUid, creatorUsername) => {
   return ref.id;
 };
 
-export const joinFamily = async (familyId, userUid, username) => {
-  const famSnap = await getDoc(doc(db, 'families', familyId));
-  if (!famSnap.exists()) throw new Error('Family not found — check the code');
+// ─── Join requests (admin-approved membership) ─────────────────────────────────
+// A non-member cannot read a family or write to it. All they may do is drop a
+// request into families/{id}/joinRequests/{their-uid}. A family admin approves it,
+// which is the only thing that adds them to memberUids.
+const pendingPointer = (uid, familyId) =>
+  setDoc(doc(db, 'users', uid), { pendingFamilyId: familyId }, { merge: true });
 
-  await updateDoc(doc(db, 'families', familyId), {
-    memberUids: arrayUnion(userUid),
-    [`memberDetails.${userUid}`]: { username, role: 'member', joinedAt: new Date().toISOString() },
-  });
-  await setUserFamilyId(userUid, familyId);
-  await writeLog(familyId, userUid, username, 'joined_family', `${username} joined the family`);
+export const requestToJoinFamily = async (familyId, userUid, username) => {
+  const id = familyId.trim();
+  if (!id) throw new Error('Enter a Family ID');
+  try {
+    await setDoc(doc(db, 'families', id, 'joinRequests', userUid), {
+      uid: userUid,
+      username,
+      status: 'pending',
+      requestedAt: serverTimestamp(),
+    });
+  } catch (err) {
+    // The create rule requires the family to exist, so a bad ID surfaces here.
+    if (err.code === 'permission-denied')
+      throw new Error('No family found with that ID — double-check it with the admin.');
+    throw err;
+  }
+  await pendingPointer(userUid, id);
 };
 
-export const addMemberByUsername = async (familyId, targetUsername, adderUid, adderUsername) => {
-  const target = await getUserByUsername(targetUsername);
-  if (!target) throw new Error(`User "${targetUsername}" does not exist`);
-  if (target.familyId) throw new Error(`"${targetUsername}" already belongs to another family`);
+// The requester watches their own request doc so they learn when it's decided.
+export const subscribeToMyJoinRequest = (familyId, userUid, cb) =>
+  onSnapshot(doc(db, 'families', familyId, 'joinRequests', userUid),
+    snap => cb(snap.exists() ? { id: snap.id, ...snap.data() } : null),
+    () => cb(null));
 
+// Once approved, the requester (already in memberUids) claims the family on their
+// own profile, then clears the pending pointer and tidies up the request doc.
+export const adoptApprovedFamily = async (familyId, userUid) => {
+  await setUserFamilyId(userUid, familyId);
+  await setDoc(doc(db, 'users', userUid), { pendingFamilyId: null }, { merge: true });
+  await deleteDoc(doc(db, 'families', familyId, 'joinRequests', userUid)).catch(() => {});
+};
+
+// The requester withdraws (or acknowledges a rejection).
+export const cancelJoinRequest = async (familyId, userUid) => {
+  await deleteDoc(doc(db, 'families', familyId, 'joinRequests', userUid)).catch(() => {});
+  await setDoc(doc(db, 'users', userUid), { pendingFamilyId: null }, { merge: true });
+};
+
+// ── Admin side ──
+export const subscribeToJoinRequests = (familyId, cb) =>
+  onSnapshot(collection(db, 'families', familyId, 'joinRequests'), snap =>
+    cb(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(r => r.status === 'pending'))
+  );
+
+export const approveJoinRequest = async (familyId, req, adminUid, adminUsername) => {
+  // Add them to the family first (admin is a member, so this is allowed) …
   await updateDoc(doc(db, 'families', familyId), {
-    memberUids: arrayUnion(target.uid),
-    [`memberDetails.${target.uid}`]: { username: target.username, role: 'member', joinedAt: new Date().toISOString() },
+    memberUids: arrayUnion(req.uid),
+    [`memberDetails.${req.uid}`]: { username: req.username, role: 'member', joinedAt: new Date().toISOString() },
   });
-  await setUserFamilyId(target.uid, familyId);
-  await writeLog(familyId, adderUid, adderUsername, 'added_member', `Added ${targetUsername} to the family`);
-  return target;
+  // … then flag the request approved so the requester's app can claim it.
+  await updateDoc(doc(db, 'families', familyId, 'joinRequests', req.uid), { status: 'approved' });
+  await writeLog(familyId, adminUid, adminUsername, 'approved_member', `Approved ${req.username} to join`);
+};
+
+export const rejectJoinRequest = async (familyId, req, adminUid, adminUsername) => {
+  await deleteDoc(doc(db, 'families', familyId, 'joinRequests', req.uid));
+  await writeLog(familyId, adminUid, adminUsername, 'rejected_member', `Declined ${req.username}'s request`);
 };
 
 export const subscribeToFamily = (familyId, cb) =>
