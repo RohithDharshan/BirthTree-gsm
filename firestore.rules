@@ -50,8 +50,10 @@ service cloud.firestore {
         && request.resource.data.createdBy == request.auth.uid
         && request.resource.data.memberUids == [request.auth.uid];
 
-      // Members can update the family (rename, lock, approve members …).
-      allow update: if isMember(familyId);
+      // The family record itself (member roster, lock flag, name) is admin-only.
+      // This is what makes approving members, locking, and renaming privileged —
+      // an ordinary member cannot add people, remove people, or flip the lock.
+      allow update: if isFamilyAdmin(familyId);
 
       // Only the family admin (creator) can delete the whole family.
       allow delete: if isFamilyAdmin(familyId);
@@ -69,9 +71,15 @@ service cloud.firestore {
           && (request.auth.uid == reqUid || isMember(familyId));
       }
 
-      // Everything else under a family (events, tree, accessLog): members only.
+      // Everything else under a family (events, tree, accessLog):
+      //  • any member may read;
+      //  • members may write only while the family is unlocked — once the admin
+      //    locks it, only the admin can change events or the tree. This makes the
+      //    lock a real guarantee, not just a UI hint.
       match /{document=**} {
-        allow read, write: if isMember(familyId);
+        allow read: if isMember(familyId);
+        allow write: if isMember(familyId)
+          && (isFamilyAdmin(familyId) || familyData(familyId).locked != true);
       }
     }
   }
