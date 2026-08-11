@@ -27,6 +27,12 @@ service cloud.firestore {
       return isSignedIn() &&
         familyData(familyId).createdBy == request.auth.uid;
     }
+    // Family content (events/tree/log) is editable by any member while the
+    // family is unlocked; once the admin locks it, only the admin may edit.
+    function canEditContent(familyId) {
+      return isMember(familyId) &&
+        (isFamilyAdmin(familyId) || familyData(familyId).get('locked', false) != true);
+    }
 
     // Username → uid mapping (read needed for uniqueness check; create by owner)
     match /usernames/{name} {
@@ -71,15 +77,21 @@ service cloud.firestore {
           && (request.auth.uid == reqUid || isMember(familyId));
       }
 
-      // Everything else under a family (events, tree, accessLog):
-      //  • any member may read;
-      //  • members may write only while the family is unlocked — once the admin
-      //    locks it, only the admin can change events or the tree. This makes the
-      //    lock a real guarantee, not just a UI hint.
-      match /{document=**} {
+      // Family content lives in these subcollections. Listed explicitly (rather
+      // than a recursive wildcard) so the permissive member-write rule can never
+      // spill onto the family document itself — that stays admin-only above.
+      // Any member reads; writes honour the lock (see canEditContent).
+      match /events/{doc} {
         allow read: if isMember(familyId);
-        allow write: if isMember(familyId)
-          && (isFamilyAdmin(familyId) || familyData(familyId).locked != true);
+        allow write: if canEditContent(familyId);
+      }
+      match /tree/{doc} {
+        allow read: if isMember(familyId);
+        allow write: if canEditContent(familyId);
+      }
+      match /accessLog/{doc} {
+        allow read: if isMember(familyId);
+        allow write: if canEditContent(familyId);
       }
     }
   }
