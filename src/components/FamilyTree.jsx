@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { subscribeToTree, saveTree } from '../firebase/db';
 import { useAuth } from '../contexts/AuthContext';
 import { compressImage } from '../utils/imageUtils';
-import { Download, Plus, X, Trash2, GitMerge, Shuffle } from 'lucide-react';
+import { Download, Plus, X, Trash2, GitMerge, Shuffle, Locate } from 'lucide-react';
 import { toBlob } from 'html-to-image';
 import { v4 as uuidv4 } from 'uuid';
 import dagre from 'dagre';
@@ -359,7 +359,10 @@ function TreeLogic() {
   )), []);
   const onSelectionChange = useCallback(({ nodes: sel }) => setSelectedNodes(sel), []);
 
-  // Add member — records the relation in the graph, then re-lays-out
+  // Add member — records the relation in the graph, then re-lays-out.
+  // Saves BEFORE touching local state: if the write is rejected (locked
+  // family, permission hiccup, offline), nothing changes on screen and the
+  // modal surfaces the real error instead of silently losing the new member.
   const handleAdd = async ({ connectToId, photo: rawPhoto, ...nodeData }) => {
     const photo   = rawPhoto ? await compressImage(rawPhoto) : null;
     const persons = normalize(toPersonNodes(nodes));
@@ -369,14 +372,14 @@ function TreeLogic() {
     };
     applyRelation(persons, newNode, connectToId, nodeData.relationship);
     const { nodes: n, edges: e } = fullLayout([...persons, newNode]);
+    await persist(n);
     setNodes(n); setEdges(e);
-    persist(n);
     setIsAddOpen(false);
-    setTimeout(() => window.requestAnimationFrame(() => fitView()), 80);
+    setTimeout(() => window.requestAnimationFrame(() => fitView({ duration: 400 })), 80);
   };
 
   // Delete selected person nodes and strip references to them
-  const handleDelete = () => {
+  const handleDelete = async () => {
     const ids = new Set(selectedNodes.map(n => n.id));
     const persons = clonePersons(toPersonNodes(nodes))
       .filter(n => !ids.has(n.id))
@@ -389,19 +392,31 @@ function TreeLogic() {
         },
       }));
     const { nodes: n, edges: e } = fullLayout(persons);
-    setNodes(n); setEdges(e);
-    persist(n);
-    setSelectedNodes([]);
+    try {
+      await persist(n);
+      setNodes(n); setEdges(e);
+      setSelectedNodes([]);
+    } catch (err) {
+      alert('Could not delete: ' + err.message);
+    }
   };
 
   // Re-run full layout
-  const handleAutoConnect = () => {
+  const handleAutoConnect = async () => {
     const persons = toPersonNodes(nodes);
     const { nodes: n, edges: e } = fullLayout(persons);
-    setNodes([...n]); setEdges([...e]);
-    persist(n);
-    window.requestAnimationFrame(() => fitView());
+    try {
+      await persist(n);
+      setNodes([...n]); setEdges([...e]);
+      window.requestAnimationFrame(() => fitView({ duration: 400 }));
+    } catch (err) {
+      alert('Could not rebuild the tree: ' + err.message);
+    }
   };
+
+  // Recenter — snap the whole tree back into view. The one thing to reach
+  // for when you've panned off somewhere and lost track of where you are.
+  const handleRecenter = () => fitView({ padding: 0.2, duration: 0 });
 
   // Download — the wrapper div is only ever as big as the on-screen canvas,
   // so whatever isn't currently panned/zoomed into view would be missing
@@ -445,6 +460,8 @@ function TreeLogic() {
           nodesDraggable={false}
           elementsSelectable={true}
           proOptions={{ hideAttribution: true }}
+          minZoom={0.1}
+          maxZoom={2}
         >
           <Background color="#ffffff" gap={24} size={1} opacity={0.05} />
           <Controls style={{ background: 'rgba(26,22,17,0.85)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, overflow: 'hidden' }} />
@@ -472,6 +489,16 @@ function TreeLogic() {
                 <Plus size={16} /> Add Member
               </button>
             )}
+          </Panel>
+          {/* Recenter — a clearly-worded way back after panning off somewhere,
+              placed away from the built-in Controls so it's easy to reach with
+              a thumb on mobile without hunting for the small fit-view icon. */}
+          <Panel position="bottom-right" style={{ margin: 20 }}>
+            <button className="btn-outline" onClick={handleRecenter}
+              style={{ background: 'rgba(26,22,17,0.85)' }}
+              title="Recenter the tree">
+              <Locate size={16} /> Recenter
+            </button>
           </Panel>
         </ReactFlow>
       </div>
@@ -501,6 +528,8 @@ export default function FamilyTreeView() {
 // ─── Add Member Modal ─────────────────────────────────────────────────────────
 function AddMemberModal({ existingNodes, onClose, onAdded }) {
   const [form, setForm] = useState({ name: '', relationship: '', photo: null, connectToId: '' });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
   const handlePhoto = e => {
     const file = e.target.files[0]; if (!file) return;
@@ -526,7 +555,14 @@ function AddMemberModal({ existingNodes, onClose, onAdded }) {
           <h2 style={{ color: 'var(--accent-cyan)' }}>Add Family Member</h2>
           <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer' }}><X /></button>
         </div>
-        <form onSubmit={e => { e.preventDefault(); if (form.name && form.relationship) onAdded(form); }}
+        <form onSubmit={async e => {
+            e.preventDefault();
+            if (!form.name || !form.relationship) return;
+            setError(''); setSaving(true);
+            try { await onAdded(form); }
+            catch (err) { setError(err.message || 'Could not save. Please try again.'); }
+            finally { setSaving(false); }
+          }}
           style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
             <label style={{ display: 'block', marginBottom: 8, color: 'var(--text-muted)' }}>Name *</label>
@@ -561,8 +597,14 @@ function AddMemberModal({ existingNodes, onClose, onAdded }) {
             <label style={{ display: 'block', marginBottom: 8, color: 'var(--text-muted)' }}>Photo</label>
             <input type="file" accept="image/*" onChange={handlePhoto} />
           </div>
-          <button type="submit" className="btn-primary" style={{ marginTop: 8, justifyContent: 'center' }}>
-            Add to Tree
+          {error && (
+            <div style={{ color: '#ff4d4d', fontSize: '0.85rem', padding: '10px 14px', background: 'rgba(255,77,77,0.1)', borderRadius: '8px', border: '1px solid rgba(255,77,77,0.3)' }}>
+              {error}
+            </div>
+          )}
+          <button type="submit" className="btn-primary" disabled={saving}
+            style={{ marginTop: 8, justifyContent: 'center', opacity: saving ? 0.7 : 1 }}>
+            {saving ? 'Saving…' : 'Add to Tree'}
           </button>
         </form>
       </motion.div>

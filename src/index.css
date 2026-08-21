@@ -434,6 +434,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 .family-tree-view {
+  /* vh first as a fallback: if a browser doesn't understand `dvh` at all,
+     the whole dvh declaration is invalid and dropped by the parser — which
+     would otherwise leave this with no computed height at all (collapsing
+     the tree canvas to zero and making it invisible). Because both lines
+     target the same property, the later valid one simply wins where dvh
+     IS supported. */
+  height: calc(100vh - 80px);
   height: calc(100dvh - 80px);
   width: 100%;
 }
@@ -672,12 +679,21 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     margin: 12px !important;
   }
 
-  /* The canvas height itself must also shrink by the tab bar's reserved
-     space (64px bar + 16px margin, both top and bottom of the pill), or
-     fitView() centers everyone inside a taller box than what's actually
-     visible above the bar — cutting off whoever lands in that gap. */
+  /* The Recenter button panel sits bottom-right — same fixed-tab-bar
+     clearance as .react-flow__controls above, or it's unreachable. */
+  .react-flow__panel.bottom.right {
+    bottom: 96px !important;
+  }
+
+  /* The canvas height itself must also shrink by the mobile top bar (64px,
+     not the desktop 80px) and by the tab bar's reserved space (64px bar +
+     16px margin, both top and bottom of the pill), or fitView() centers
+     everyone inside a taller box than what's actually visible — cutting
+     off whoever lands in that gap. vh first as a dvh-unsupported fallback
+     (see the base .family-tree-view rule for why). */
   .family-tree-view {
-    height: calc(100dvh - 80px - 96px) !important;
+    height: calc(100vh - 64px - 96px) !important;
+    height: calc(100dvh - 64px - 96px) !important;
   }
 }
 
