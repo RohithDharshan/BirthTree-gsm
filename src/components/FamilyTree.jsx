@@ -336,21 +336,32 @@ function TreeLogic() {
   const [edges, setEdges] = useState([]);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [selectedNodes, setSelectedNodes] = useState([]);
+  // `nodes` starts empty before Firestore's first snapshot arrives. Every
+  // save below writes a full replacement of the tree (saveTree isn't a
+  // merge), so persisting anything while still on that initial empty state
+  // would overwrite everyone who already existed with just the one new
+  // change — this flag is what stands between "add a member" and "erase
+  // the tree." Nothing that persists is allowed to run until it's true.
+  const [loaded, setLoaded] = useState(false);
   const { fitView } = useReactFlow();
   const wrapper = useRef(null);
 
   // Subscribe to Firestore tree – rebuild layout whenever data changes
   useEffect(() => {
+    setLoaded(false);
     if (!userProfile?.familyId) return;
     return subscribeToTree(userProfile.familyId, (data) => {
       const persons = toPersonNodes(data.personNodes || []);
       const { nodes: n, edges: e } = fullLayout(persons);
       setNodes(n); setEdges(e);
+      setLoaded(true);
     });
   }, [userProfile?.familyId]);
 
-  const persist = (n) =>
-    saveTree(userProfile.familyId, toPersonNodes(n), currentUser.uid, userProfile.username);
+  const persist = (n) => {
+    if (!loaded) throw new Error('Still loading your family tree — please wait a moment and try again.');
+    return saveTree(userProfile.familyId, toPersonNodes(n), currentUser.uid, userProfile.username);
+  };
 
   const onNodesChange = useCallback(changes => setNodes(nds => applyNodeChanges(changes, nds)), []);
   const onEdgesChange = useCallback(changes => setEdges(eds => applyEdgeChanges(changes, eds)), []);
@@ -466,18 +477,25 @@ function TreeLogic() {
           <Background color="#ffffff" gap={24} size={1} opacity={0.05} />
           <Controls style={{ background: 'rgba(26,22,17,0.85)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, overflow: 'hidden' }} />
           <Panel position="top-right" style={{ display: 'flex', gap: 10, margin: 20, flexWrap: 'wrap', justifyContent: 'flex-end', alignItems: 'center' }}>
+            {!loaded && (
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '4px 10px' }}>
+                Loading your family tree…
+              </span>
+            )}
             {isLocked && !canEdit && (
               <span style={{ fontSize: '0.78rem', color: '#f59e0b', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '6px', padding: '4px 10px' }}>
                 🔒 Locked
               </span>
             )}
             {canEdit && selectedNodes.filter(n => !SPECIAL.has(n.type)).length > 0 && (
-              <button className="btn-outline" onClick={handleDelete} style={{ borderColor: '#ff4d4d', color: '#ff4d4d', background: 'rgba(255,77,77,0.1)' }}>
+              <button className="btn-outline" onClick={handleDelete} disabled={!loaded}
+                style={{ borderColor: '#ff4d4d', color: '#ff4d4d', background: 'rgba(255,77,77,0.1)', opacity: loaded ? 1 : 0.5 }}>
                 <Trash2 size={16} /> Delete
               </button>
             )}
             {canEdit && (
-              <button className="btn-outline" onClick={handleAutoConnect} style={{ background: 'rgba(26,22,17,0.85)' }}>
+              <button className="btn-outline" onClick={handleAutoConnect} disabled={!loaded}
+                style={{ background: 'rgba(26,22,17,0.85)', opacity: loaded ? 1 : 0.5 }}>
                 <Shuffle size={16} /> Rebuild Tree
               </button>
             )}
@@ -485,7 +503,8 @@ function TreeLogic() {
               <Download size={16} /> Download
             </button>
             {canEdit && (
-              <button className="btn-primary" onClick={() => setIsAddOpen(true)}>
+              <button className="btn-primary" onClick={() => setIsAddOpen(true)} disabled={!loaded}
+                style={{ opacity: loaded ? 1 : 0.6 }}>
                 <Plus size={16} /> Add Member
               </button>
             )}
