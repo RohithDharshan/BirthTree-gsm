@@ -52,12 +52,13 @@ export default async function handler(req, res) {
         };
       });
 
-      let totalEvents = 0;
-      let totalActivity = 0;
-      const families = [];
-      const recent = [];
-
-      for (const f of familiesSnap.docs) {
+      // One family's 3 reads were already parallel, but the families
+      // THEMSELVES were fetched one at a time (a `for` loop with `await`
+      // inside) — so total load time grew linearly with family count. With
+      // every family (real or test) added, the dashboard got slower. Now
+      // every family's reads run concurrently, so total time is bounded by
+      // the single slowest family, not the sum of all of them.
+      const perFamily = await Promise.all(familiesSnap.docs.map(async (f) => {
         const data = f.data();
         const [evCount, logCount, logSnap] = await Promise.all([
           f.ref.collection('events').count().get(),
@@ -66,28 +67,34 @@ export default async function handler(req, res) {
         ]);
         const events = evCount.data().count;
         const activity = logCount.data().count;
-        totalEvents += events;
-        totalActivity += activity;
-        families.push({
-          id: f.id,
-          name: data.name || '(unnamed)',
-          members: (data.memberUids || []).length,
-          events,
-          activity,
-          locked: !!data.locked,
-          createdAt: iso(data.createdAt),
-        });
-        logSnap.docs.forEach(l => {
+        const recentEntries = logSnap.docs.map(l => {
           const log = l.data();
-          recent.push({
+          return {
             family: data.name || f.id,
             username: log.username,
             action: log.action,
             details: log.details,
             ts: iso(log.timestamp),
-          });
+          };
         });
-      }
+        return {
+          family: {
+            id: f.id,
+            name: data.name || '(unnamed)',
+            members: (data.memberUids || []).length,
+            events,
+            activity,
+            locked: !!data.locked,
+            createdAt: iso(data.createdAt),
+          },
+          events, activity, recentEntries,
+        };
+      }));
+
+      const families = perFamily.map(p => p.family);
+      const totalEvents = perFamily.reduce((sum, p) => sum + p.events, 0);
+      const totalActivity = perFamily.reduce((sum, p) => sum + p.activity, 0);
+      const recent = perFamily.flatMap(p => p.recentEntries);
 
       recent.sort((a, b) => (b.ts || '').localeCompare(a.ts || ''));
 
