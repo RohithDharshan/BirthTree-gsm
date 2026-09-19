@@ -44,51 +44,61 @@ function MiniMonth() {
   );
 }
 
-/* ── Animated family tree scene: lines draw themselves on scroll ─────────── */
-function TreeScene() {
+/* ── Animated family tree scene: lines draw themselves on scroll ───────────
+   Every piece used to carry its OWN whileInView + viewport observer — 11
+   separate IntersectionObservers, each watching an individual SVG <g>/<path>
+   directly. That's a known-fragile pattern: IntersectionObserver on raw SVG
+   child elements is inconsistent across mobile browsers, so any one piece
+   could simply fail to fire, leaving it invisible forever (once:true never
+   retries). Now there's exactly ONE observer, on a plain wrapping <div>
+   (the most reliably-observed element type everywhere) — every child just
+   reads that single "visible" state via variants instead of watching the
+   viewport itself. */
+function TreeScene({ reduceMotion }) {
+  const nodeVariants = (delay) => ({
+    hidden: { opacity: 0, scale: 0.6 },
+    visible: { opacity: 1, scale: 1, transition: { ...spring, delay } },
+  });
+  const lineVariants = (delay) => ({
+    hidden: { pathLength: 0 },
+    visible: { pathLength: 1, transition: { duration: 0.9, ease: [0.22, 1, 0.36, 1], delay } },
+  });
+
   const node = (cx, cy, initial, name, color, delay) => (
-    <motion.g
-      initial={{ opacity: 0, scale: 0.6 }}
-      whileInView={{ opacity: 1, scale: 1 }}
-      viewport={{ once: true }}
-      transition={{ ...spring, delay }}
-      style={{ transformOrigin: `${cx}px ${cy}px` }}
-    >
+    <motion.g variants={nodeVariants(delay)} style={{ transformOrigin: `${cx}px ${cy}px` }}>
       <circle cx={cx} cy={cy} r="34" fill="rgba(26,22,17,0.9)" stroke={color} strokeWidth="2" />
       <text x={cx} y={cy - 2} textAnchor="middle" fill={color} fontSize="20" fontWeight="700" fontFamily="Fraunces, serif">{initial}</text>
       <text x={cx} y={cy + 54} textAnchor="middle" fill="#a89f93" fontSize="12" fontFamily="Outfit, sans-serif">{name}</text>
     </motion.g>
   );
   const line = (d, color, delay) => (
-    <motion.path
-      d={d} stroke={color} strokeWidth="2" fill="none"
-      initial={{ pathLength: 0 }}
-      whileInView={{ pathLength: 1 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay }}
-    />
+    <motion.path d={d} stroke={color} strokeWidth="2" fill="none" variants={lineVariants(delay)} />
   );
+  // Reduced-motion users (or a device where a viewport observer never fires
+  // for some reason) still see the finished scene — just not the reveal.
   return (
-    <svg viewBox="0 0 560 400" style={{ width: 'min(560px, 92vw)', height: 'auto', overflow: 'visible' }} role="img"
-      aria-label="A family tree: Amma and Appa joined by a heart, with two children linked below">
-      {line('M 176 110 L 252 110', ROSE, 0.5)}
-      {line('M 308 110 L 384 110', ROSE, 0.5)}
-      {/* single drop from the heart, so no line crosses the parents' names */}
-      {line('M 280 128 L 280 250', GOLD, 0.9)}
-      {line('M 180 250 L 380 250', GOLD, 1.2)}
-      {line('M 180 250 L 180 288', GOLD, 1.45)}
-      {line('M 380 250 L 380 288', GOLD, 1.45)}
-      {node(140, 110, 'A', 'Appa', GOLD, 0.1)}
-      {node(420, 110, 'A', 'Amma', GOLD, 0.25)}
-      <motion.text x="280" y="120" textAnchor="middle" fontSize="26" fill={ROSE}
-        initial={{ opacity: 0, scale: 0 }} whileInView={{ opacity: 1, scale: 1 }}
-        viewport={{ once: true }} transition={{ ...spring, delay: 0.7 }}
-        style={{ transformOrigin: '280px 112px', filter: 'drop-shadow(0 0 8px rgba(201,111,133,0.8))' }}>
-        ♥
-      </motion.text>
-      {node(180, 324, 'T', 'Thangam', GOLD, 1.7)}
-      {node(380, 324, 'R', 'Ravi', GOLD, 1.85)}
-    </svg>
+    <motion.div initial={reduceMotion ? 'visible' : 'hidden'} animate={reduceMotion ? 'visible' : undefined}
+      whileInView={reduceMotion ? undefined : 'visible'} viewport={{ once: true, amount: 0.2 }}>
+      <svg viewBox="0 0 560 400" style={{ width: 'min(560px, 92vw)', height: 'auto', overflow: 'visible' }} role="img"
+        aria-label="A family tree: Amma and Appa joined by a heart, with two children linked below">
+        {line('M 176 110 L 252 110', ROSE, 0.5)}
+        {line('M 308 110 L 384 110', ROSE, 0.5)}
+        {/* single drop from the heart, so no line crosses the parents' names */}
+        {line('M 280 128 L 280 250', GOLD, 0.9)}
+        {line('M 180 250 L 380 250', GOLD, 1.2)}
+        {line('M 180 250 L 180 288', GOLD, 1.45)}
+        {line('M 380 250 L 380 288', GOLD, 1.45)}
+        {node(140, 110, 'A', 'Appa', GOLD, 0.1)}
+        {node(420, 110, 'A', 'Amma', GOLD, 0.25)}
+        <motion.text x="280" y="120" textAnchor="middle" fontSize="26" fill={ROSE}
+          variants={{ hidden: { opacity: 0, scale: 0 }, visible: { opacity: 1, scale: 1, transition: { ...spring, delay: 0.7 } } }}
+          style={{ transformOrigin: '280px 112px', filter: 'drop-shadow(0 0 8px rgba(201,111,133,0.8))' }}>
+          ♥
+        </motion.text>
+        {node(180, 324, 'T', 'Thangam', GOLD, 1.7)}
+        {node(380, 324, 'R', 'Ravi', GOLD, 1.85)}
+      </svg>
+    </motion.div>
   );
 }
 
@@ -343,7 +353,7 @@ export default function Landing() {
           from both parents. The tree rebuilds every time the family does.
         </motion.p>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <TreeScene />
+          <TreeScene reduceMotion={reduceMotion} />
         </div>
       </section>
 
