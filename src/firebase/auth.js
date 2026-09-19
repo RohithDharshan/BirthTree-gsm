@@ -72,12 +72,6 @@ export const getUserProfile = async (uid) => {
   return snap.exists() ? snap.data() : null;
 };
 
-export const getUserByUsername = async (username) => {
-  const snap = await getDoc(doc(db, 'usernames', username.toLowerCase()));
-  if (!snap.exists()) return null;
-  return getUserProfile(snap.data().uid);
-};
-
 // merge:true so this also repairs profiles that failed to be created at signup
 export const setUserFamilyId = (uid, familyId) =>
   setDoc(doc(db, 'users', uid), { familyId }, { merge: true });

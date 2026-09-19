@@ -40,10 +40,15 @@ service cloud.firestore {
       allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
     }
 
-    // User profiles: each user manages their own document
+    // User profiles: readable and writable ONLY by their owner. This doc
+    // carries real PII and secrets — phone number, email, Telegram bot
+    // token, CallMeBot API key — none of which any other user, family
+    // member or stranger, has a reason to see. (Other members only ever
+    // need a username, which is denormalized onto the family doc's
+    // memberDetails and onto events/tree/log entries — nothing reads a
+    // raw users/{uid} doc for anyone but its own owner.)
     match /users/{uid} {
-      allow read: if isSignedIn();
-      allow create, update: if isSignedIn() && request.auth.uid == uid;
+      allow read, create, update: if isSignedIn() && request.auth.uid == uid;
     }
 
     // ── Family record ──────────────────────────────────────────────────────
